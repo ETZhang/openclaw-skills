@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CryptoVault - 专业加密货币交易平台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        background: '#0F0F23',
+                        primary: '#1E1B4B',
+                        secondary: '#312E81',
+                        accent: '#F97316',
+                        surface: '#1A1A2E',
+                        success: '#10B981',
+                        danger: '#EF4444',
+                        text: '#F8FAFC',
+                        muted: '#94A3B8'
+                    },
+                    fontFamily: {
+                        sans: ['IBM Plex Sans', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        * {
+            font-family: 'IBM Plex Sans', sans-serif;
+        }
+        
+        body {
+            background: #0F0F23;
+        }
+        
+        .glow {
+            box-shadow: 0 0 20px rgba(249, 115, 22, 0.3);
+        }
+        
+        .glow-success {
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #0F0F23 0%, #1E1B4B 50%, #0F0F23 100%);
+        }
+        
+        .card-gradient {
+            background: linear-gradient(145deg, #1A1A2E 0%, #16162A 100%);
+        }
+        
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(249, 115, 22, 0.3); }
+            50% { box-shadow: 0 0 40px rgba(249, 115, 22, 0.5); }
+        }
+        
+        .pulse-glow {
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .float {
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .slide-in {
+            animation: slideIn 0.5s ease-out forwards;
+        }
+        
+        .hover-lift {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .hover-lift:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+        
+        .price-up {
+            color: #10B981;
+        }
+        
+        .price-down {
+            color: #EF4444;
+        }
+        
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .crypto-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        
+        .btc { background: linear-gradient(135deg, #F7931A 0%, #FFAB40 100%); }
+        .eth { background: linear-gradient(135deg, #627EEA 0%, #8C9EFF 100%); }
+        .bnb { background: linear-gradient(135deg, #F3BA2F 0%, #FFE082 100%); }
+        .sol { background: linear-gradient(135deg, #9945FF 0%, #14F195 100%); }
+    </style>
+</head>
+<body class="text-text min-h-screen">
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-b border-white/10">
+        <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <!-- Logo -->
+                <div class="flex items-center space-x-2">
+                    <div class="w-10 h-10 bg-accent rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                        </svg>
+                    </div>
+                    <span class="text-2xl font-bold text-white">CryptoVault</span>
+                </div>
+                
+                <!-- Menu -->
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#" class="text-muted hover:text-white transition-colors">交易</a>
+                    <a href="#" class="text-muted hover:text-white transition-colors">行情</a>
+                    <a href="#" class="text-muted hover:text-white transition-colors">合约</a>
+                    <a href="#" class="text-muted hover:text-white transition-colors">杠杆</a>
+                    <a href="#" class="text-muted hover:text-white transition-colors">资产管理</a>
+                </div>
+                
+                <!-- Right Section -->
+                <div class="flex items-center space-x-4">
+                    <button class="p-2 text-muted hover:text-white transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                    </button>
+                    <button class="p-2 text-muted hover:text-white transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                        </svg>
+                    </button>
+                    <button class="px-6 py-2 bg-accent hover:bg-orange-600 text-white rounded-lg font-medium transition-all duration-300 pulse-glow cursor-pointer">
+                        登录/注册
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Hero Section -->
+    <section class="pt-28 pb-20 gradient-bg">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <!-- Left Content -->
+                <div class="slide-in">
+                    <div class="inline-flex items-center space-x-2 bg-primary/50 rounded-full px-4 py-2 mb-6">
+                        <span class="w-2 h-2 bg-success rounded-full animate-pulse"></span>
+                        <span class="text-sm text-muted">平台已安全运营 1500+ 天</span>
+                    </div>
+                    
+                    <h1 class="text-5xl md:text-6xl font-bold text-white mb-6 leading-tight">
+                        全球领先的<br>
+                        <span class="text-accent">加密货币</span> 交易平台
+                    </h1>
+                    
+                    <p class="text-xl text-muted mb-8 leading-relaxed">
+                        实时行情、低手续费、安全可靠。支持 200+ 加密货币交易，
+                        享受专业级的交易体验。
+                    </p>
+                    
+                    <div class="flex flex-wrap gap-4 mb-10">
+                        <button class="px-8 py-4 bg-accent hover:bg-orange-600 text-white rounded-xl font-semibold text-lg transition-all duration-300 hover-lift cursor-pointer">
+                            开始交易
+                        </button>
+                        <button class="px-8 py-4 border border-white/20 hover:border-accent text-white rounded-xl font-semibold text-lg transition-all duration-300 hover-lift cursor-pointer">
+                            下载 App
+                        </button>
+                    </div>
+                    
+                    <!-- Stats -->
+                    <div class="flex flex-wrap gap-8">
+                        <div>
+                            <div class="text-3xl font-bold text-white">$20B+</div>
+                            <div class="text-muted">日均交易量</div>
+                        </div>
+                        <div>
+                            <div class="text-3xl font-bold text-white">500万+</div>
+                            <div class="text-muted">注册用户</div>
+                        </div>
+                        <div>
+                            <div class="text-3xl font-bold text-white">0.1%</div>
+                            <div class="text-muted">最低手续费</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right - Live Chart -->
+                <div class="card-gradient rounded-2xl p-6 border border-white/10 hover-lift float">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center space-x-4">
+                            <div class="crypto-icon btc">₿</div>
+                            <div>
+                                <div class="text-xl font-bold text-white">Bitcoin</div>
+                                <div class="text-muted">BTC/USDT</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold text-white">$67,842.50</div>
+                            <div class="price-up flex items-center justify-end">
+                                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z"/>
+                                </svg>
+                                +2.45%
+                            </div>
+                        </div>
+                    </div>
+                    <canvas id="btcChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Market Overview -->
+    <section class="py-16 bg-surface">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex items-center justify-between mb-8">
+                <h2 class="text-2xl font-bold text-white">热门交易对</h2>
+                <div class="flex items-center space-x-2">
+                    <button class="px-4 py-2 bg-accent text-white rounded-lg text-sm cursor-pointer">涨幅榜</button>
+                    <button class="px-4 py-2 bg-surface border border-white/10 text-muted rounded-lg text-sm hover:text-white transition-colors cursor-pointer">跌幅榜</button>
+                    <button class="px-4 py-2 bg-surface border border-white/10 text-muted rounded-lg text-sm hover:text-white transition-colors cursor-pointer">成交额</button>
+                </div>
+            </div>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- BTC -->
+                <div class="card-gradient rounded-xl p-5 border border-white/10 hover-lift cursor-pointer">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="crypto-icon btc">₿</div>
+                            <div>
+                                <div class="font-semibold text-white">Bitcoin</div>
+                                <div class="text-sm text-muted">BTC</div>
+                            </div>
+                        </div>
+                        <span class="text-success text-sm">+2.45%</span>
+                    </div>
+                    <div class="text-2xl font-bold text-white mb-2">$67,842.50</div>
+                    <div class="text-muted text-sm">$45.2B (24h)</div>
+                </div>
+                
+                <!-- ETH -->
+                <div class="card-gradient rounded-xl p-5 border border-white/10 hover-lift cursor-pointer">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="crypto-icon eth">Ξ</div>
+                            <div>
+                                <div class="font-semibold text-white">Ethereum</div>
+                                <div class="text-sm text-muted">ETH</div>
+                            </div>
+                        </div>
+                        <span class="text-success text-sm">+3.12%</span>
+                    </div>
+                    <div class="text-2xl font-bold text-white mb-2">$3,521.80</div>
+                    <div class="text-muted text-sm">$18.5B (24h)</div>
+                </div>
+                
+                <!-- BNB -->
+                <div class="card-gradient rounded-xl p-5 border border-white/10 hover-lift cursor-pointer">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="crypto-icon bnb">B</div>
+                            <div>
+                                <div class="font-semibold text-white">BNB</div>
+                                <div class="text-sm text-muted">BNB</div>
+                            </div>
+                        </div>
+                        <span class="text-success text-sm">+1.87%</span>
+                    </div>
+                    <div class="text-2xl font-bold text-white mb-2">$592.30</div>
+                    <div class="text-muted text-sm">$2.1B (24h)</div>
+                </div>
+                
+                <!-- SOL -->
+                <div class="card-gradient rounded-xl p-5 border border-white/10 hover-lift cursor-pointer">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="crypto-icon sol">S</div>
+                            <div>
+                                <div class="font-semibold text-white">Solana</div>
+                                <div class="text-sm text-muted">SOL</div>
+                            </div>
+                        </div>
+                        <span class="price-down text-sm">-0.54%</span>
+                    </div>
+                    <div class="text-2xl font-bold text-white mb-2">$172.45</div>
+                    <div class="text-muted text-sm">$4.8B (24h)</div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Trading Interface -->
+    <section class="py-16">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="grid lg:grid-cols-3 gap-6">
+                <!-- Trading Panel -->
+                <div class="lg:col-span-2 card-gradient rounded-2xl p-6 border border-white/10">
+                    <div class="flex items-center space-x-4 mb-6">
+                        <button class="px-6 py-2 bg-accent text-white rounded-lg font-medium cursor-pointer">现货</button>
+                        <button class="px-6 py-2 text-muted hover:text-white transition-colors cursor-pointer">杠杆</button>
+                        <button class="px-6 py-2 text-muted hover:text-white transition-colors cursor-pointer">合约</button>
+                    </div>
+                    
+                    <!-- Trading Pair -->
+                    <div class="flex items-center justify-between mb-6 p-4 bg-primary/30 rounded-xl">
+                        <div class="flex items-center space-x-4">
+                            <div class="crypto-icon btc">₿</div>
+                            <div>
+                                <div class="text-xl font-bold text-white">BTC/USDT</div>
+                                <div class="text-muted text-sm">Bitcoin / Tether</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold text-white">$67,842.50</div>
+                            <div class="text-success text-sm">≈ ¥493,521</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Chart Container -->
+                    <div class="bg-surface rounded-xl p-4 mb-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center space-x-2">
+                                <button class="px-3 py-1 bg-primary text-white rounded text-sm cursor-pointer">15分</button>
+                                <button class="px-3 py-1 text-muted hover:text-white text-sm transition-colors cursor-pointer">1时</button>
+                                <button class="px-3 py-1 text-muted hover:text-white text-sm transition-colors cursor-pointer">4时</button>
+                                <button class="px-3 py-1 text-muted hover:text-white text-sm transition-colors cursor-pointer">日线</button>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <button class="p-2 text-muted hover:text-white transition-colors cursor-pointer">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <canvas id="tradingChart" height="300"></canvas>
+                    </div>
+                    
+                    <!-- Order Form -->
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div>
+                            <div class="flex items-center justify-between mb-3">
+                                <button class="text-white font-medium cursor-pointer">买入 BTC</button>
+                                <button class="text-muted hover:text-white transition-colors text-sm cursor-pointer">卖出 BTC</button>
+                            </div>
+                            <div class="bg-surface rounded-xl p-4">
+                                <div class="flex items-center justify-between mb-4">
+                                    <span class="text-muted">价格</span>
+                                    <span class="text-muted text-sm">USDT</span>
+                                </div>
+                                <div class="flex items-center bg-primary/50 rounded-lg p-3 mb-4">
+                                    <input type="text" value="67,842.50" class="bg-transparent text-white text-xl font-bold w-full outline-none">
+                                    <span class="text-muted ml-2">USDT</span>
+                                </div>
+                                <div class="flex items-center justify-between mb-4">
+                                    <span class="text-muted">数量</span>
+                                    <span class="text-muted text-sm">BTC</span>
+                                </div>
+                                <div class="flex items-center bg-primary/50 rounded-lg p-3 mb-4">
+                                    <input type="text" placeholder="0.00" class="bg-transparent text-white text-xl font-bold w-full outline-none">
+                                    <span class="text-muted ml-2">BTC</span>
+                                </div>
+                                <div class="grid grid-cols-4 gap-2 mb-4">
+                                    <button class="py-2 bg-surface border border-white/10 rounded-lg text-muted hover:text-white hover:border-accent transition-colors text-sm cursor-pointer">25%</button>
+                                    <button class="py-2 bg-surface border border-white/10 rounded-lg text-muted hover:text-white hover:border-accent transition-colors text-sm cursor-pointer">50%</button>
+                                    <button class="py-2 bg-surface border border-white/10 rounded-lg text-muted hover:text-white hover:border-accent transition-colors text-sm cursor-pointer">75%</button>
+                                    <button class="py-2 bg-surface border border-white/10 rounded-lg text-muted hover:text-white hover:border-accent transition-colors text-sm cursor-pointer">100%</button>
+                                </div>
+                                <button class="w-full py-4 bg-success hover:bg-green-600 text-white rounded-xl font-semibold text-lg transition-all duration-300 hover-lift cursor-pointer">
+                                    买入 BTC
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Order Book -->
+                        <div>
+                            <div class="text-white font-medium mb-3">订单簿</div>
+                            <div class="bg-surface rounded-xl p-4 h-80 overflow-auto scrollbar-hide">
+                                <div class="flex items-center justify-between text-sm text-muted mb-2">
+                                    <span>价格(USDT)</span>
+                                    <span>数量(BTC)</span>
+                                </div>
+                                <div class="space-y-1">
+                                    <div class="flex items-center justify-between text-sm">
+                                        <span class="text-danger">67,845.20</span>
+                                        <span class="text-white">0.542</span>
+                                    </div>
+                                    <div class="flex items-center justify-between text-sm">
+                                        <span class="text-danger">67,844.50</span>
+                                        <span class="text-white">1.234</span>
+                                    </div>
+                                    <div class="flex items-center justify-between text-sm">
+                                        <span class="text-danger">67,843.80</span>
+                                        <span class="text-white">0.892</span>
+                                    </div>
+                                    <div class="flex items-center justify-between text-sm">
+                                        <span class="text-danger">67,843.00</span>
+                                        <span class="text-white">2.156</span>
+                                    </div>
+                                    <div class="flex items-center justify-between text-sm">
+                                        <span class="text-danger">67,842.50</span>
+                                        <span class="text-white">3.421</span>
+                                    </div>
+                                    <div class="border-t border-white/10 my-2"></div>
+                                    <div class="flex items-center justify-between text-sm">
+                                        <span class="text-success">67,842.00</span>
+                                        <span class="text-white">0.756</span>
+                                    </div>
+                                    <div class="flex items-center justify-between text-sm">
+                                        <span class="text-success">67,841.50</span>
+                                        <span class="text-white">1.893</span>
+                                    </div>
+                                    <div class="flex items-center justify-between text-sm">
+                                        <span class="text-success">67,840.80</span>
+                                        <span class="text-white">0.421</span>
+                                    </div>
+                                    <div class="flex items-center justify-between text-sm">
+                                        <span class="text-success">67,840.00</span>
+                                        <span class="text-white">2.567</span>
+                                    </div>
+                                    <div class="flex items-center justify-between text-sm">
+                                        <span class="text-success">67,839.50</span>
+                                        <span class="text-white">0.234</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Market Info -->
+                <div class="space-y-4">
+                    <!-- Market Stats -->
+                    <div class="card-gradient rounded-xl p-5 border border-white/10">
+                        <div class="text-white font-semibold mb-4">市场概况</div>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-muted">24H 最高</span>
+                                <span class="text-white">$68,521.00</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-muted">24H 最低</span>
+                                <span class="text-white">$66,120.50</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-muted">24H 成交量</span>
+                                <span class="text-white">45,234 BTC</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-muted">24H 涨跌幅</span>
+                                <span class="text-success">+2.45%</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-muted">流通市值</span>
+                                <span class="text-white">$1.32T</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Recent Trades -->
+                    <div class="card-gradient rounded-xl p-5 border border-white/10">
+                        <div class="text-white font-semibold mb-4">实时成交</div>
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-danger">67,842.50</span>
+                                <span class="text-white">0.015</span>
+                                <span class="text-muted">10:23:45</span>
+                            </div>
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-success">67,841.20</span>
+                                <span class="text-white">0.082</span>
+                                <span class="text-muted">10:23:42</span>
+                            </div>
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-danger">67,842.00</span>
+                                <span class="text-white">0.256</span>
+                                <span class="text-muted">10:23:38</span>
+                            </div>
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-danger">67,843.50</span>
+                                <span class="text-white">0.041</span>
+                                <span class="text-muted">10:23:35</span>
+                            </div>
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-success">67,840.00</span>
+                                <span class="text-white">0.512</span>
+                                <span class="text-muted">10:23:30</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Assets -->
+                    <div class="card-gradient rounded-xl p-5 border border-white/10">
+                        <div class="text-white font-semibold mb-4">我的资产</div>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-2">
+                                    <div class="crypto-icon btc text-sm">₿</div>
+                                    <span class="text-white">BTC</span>
+                                </div>
+                                <span class="text-white">1.2345</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-2">
+                                    <div class="crypto-icon eth text-sm">Ξ</div>
+                                    <span class="text-white">ETH</span>
+                                </div>
+                                <span class="text-white">15.678</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-2">
+                                    <div class="crypto-icon bnb text-sm" style="width:28px;height:28px;font-size:12px;">B</div>
+                                    <span class="text-white">USDT</span>
+                                </div>
+                                <span class="text-white">12,456.78</span>
+                            </div>
+                        </div>
+                        <button class="w-full mt-4 py-3 bg-primary hover:bg-secondary text-white rounded-lg font-medium transition-colors cursor-pointer">
+                            充提资产
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Features -->
+    <section class="py-16 bg-surface">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-white mb-4">为什么选择 CryptoVault</h2>
+                <p class="text-muted text-lg">专业、安全、便捷的加密货币交易体验</p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="card-gradient rounded-xl p-6 border border-white/10 hover-lift text-center">
+                    <div class="w-16 h-16 bg-accent/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-white mb-2">银行级安全</h3>
+                    <p class="text-muted">多重加密、冷热分离、资产保险</p>
+                </div>
+                
+                <div class="card-gradient rounded-xl p-6 border border-white/10 hover-lift text-center">
+                    <div class="w-16 h-16 bg-accent/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-white mb-2">极速交易</h3>
+                    <p class="text-muted">百万级并发、毫秒级成交</p>
+                </div>
+                
+                <div class="card-gradient rounded-xl p-6 border border-white/10 hover-lift text-center">
+                    <div class="w-16 h-16 bg-accent/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-white mb-2">超低费率</h3>
+                    <p class="text-muted">Maker 0.02% / Taker 0.05%</p>
+                </div>
+                
+                <div class="card-gradient rounded-xl p-6 border border-white/10 hover-lift text-center">
+                    <div class="w-16 h-16 bg-accent/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-white mb-2">7×24客服</h3>
+                    <p class="text-muted">专业客服团队随时为您服务</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Footer -->
+    <footer class="py-12 border-t border-white/10">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="grid md:grid-cols-4 gap-8 mb-8">
+                <div>
+                    <div class="flex items-center space-x-2 mb-4">
+                        <div class="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                            </svg>
+                        </div>
+                        <span class="text-xl font-bold text-white">CryptoVault</span>
+                    </div>
+                    <p class="text-muted text-sm">全球领先的加密货币交易平台，为用户提供安全、便捷的数字资产交易服务。</p>
+                </div>
+                
+                <div>
+                    <h4 class="text-white font-semibold mb-4">交易</h4>
+                    <ul class="space-y-2 text-muted text-sm">
+                        <li><a href="#" class="hover:text-white transition-colors">现货交易</a></li>
+                        <li><a href="#"
