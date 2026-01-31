@@ -16,6 +16,19 @@ OpenClaw AI Agent的实用技能集合，包含自动化任务、语音播报、
   ./scripts/read_image_news.sh <图片路径>  # 播报新闻
   ```
 
+### 🔋 battery-alert
+- 功能：监控电量，低电量时语音提醒
+- 作者：ET
+- 路径：`battery-alert/`
+- 依赖：edge-tts
+- 使用方法：
+  ```bash
+  cd battery-alert
+  ./scripts/install.sh              # 安装依赖
+  ./scripts/start_monitoring.sh     # 开始监控
+  ./scripts/install_service.sh      # 安装为后台服务
+  ```
+
 ## 目录结构
 
 ```
@@ -27,6 +40,14 @@ openclaw-skills/
 │       ├── install.sh
 │       ├── read_image_news.py
 │       └── read_image_news.sh
+├── battery-alert/
+│   ├── SKILL.md
+│   └── scripts/
+│       ├── install.sh
+│       ├── check_battery.py
+│       ├── start_monitoring.sh
+│       ├── install_service.sh
+│       └── config.py
 └── ... (更多技能待添加)
 ```
 
