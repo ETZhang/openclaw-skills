@@ -98,6 +98,56 @@ OpenClaw AI Agent的实用技能集合，包含自动化任务、语音播报、
   python3 scripts/search.py "performance" --stack react
   ```
 
+### 📱 feishu-integration (NEW!)
+- 功能：飞书（Feishu/Lark）集成，管理文档、文件夹和权限
+- 作者：ET
+- 路径：`feishu-integration/`
+- 依赖：OpenClaw Feishu Tools
+- 特色：
+  - ✅ 文档管理（创建、读取、写入、追加、更新、删除）
+  - ✅ 文件夹操作（列出文档和子文件夹）
+  - ✅ 权限查询（获取应用权限范围）
+  - ✅ 块级操作（获取、更新、删除文档块）
+  - ⚠️ **敏感信息保护** - 已配置 .gitignore
+- 使用方法：
+  ```bash
+  cd feishu-integration
+  
+  # 配置凭据（添加到 ~/.zshrc）
+  export FEISHU_APP_ID="your_app_id"
+  export FEISHU_APP_SECRET="your_app_secret"
+  
+  # 或创建 .env 文件（已加入 .gitignore）
+  echo "FEISHU_APP_ID=your_app_id" > .env
+  echo "FEISHU_APP_SECRET=your_app_secret" >> .env
+  
+  # 运行配置检查
+  ./scripts/install.sh
+  ```
+- OpenClaw 工具：
+  ```python
+  # 创建文档
+  feishu_doc_create(title="新文档", folder_token="可选父文件夹")
+  
+  # 读取文档
+  feishu_doc_read(doc_token="文档token")
+  
+  # 写入内容（覆盖）
+  feishu_doc_write(doc_token="文档token", content="# 标题\n内容")
+  
+  # 追加内容
+  feishu_doc_append(doc_token="文档token", content="更多内容")
+  
+  # 列出文档块
+  feishu_doc_list_blocks(doc_token="文档token")
+  
+  # 列出文件夹内容
+  feishu_folder_list(folder_token="文件夹token")
+  
+  # 查询权限范围
+  feishu_app_scopes()
+  ```
+
 ## 目录结构
 
 ```
@@ -165,6 +215,12 @@ openclaw-skills/
 │           ├── swiftui.csv
 │           ├── react-native.csv
 │           └── ...
+├── feishu-integration/             # NEW!
+│   ├── SKILL.md                    # 完整使用文档
+│   ├── .gitignore                  # 排除敏感文件
+│   └── scripts/
+│       ├── install.sh              # 配置检查
+│       └── examples.sh             # 使用示例
 └── ... (更多技能待添加)
 ```
 
