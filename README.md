@@ -69,6 +69,35 @@ OpenClaw AI Agent的实用技能集合，包含自动化任务、语音播报、
   ./scripts/examples.sh
   ```
 
+### 🎨 ui-ux-pro-max (NEW!)
+- 功能：专业UI/UX设计智能，提供67种风格、96种配色、13个技术栈的设计建议
+- 作者：ET
+- 路径：`ui-ux-pro-max/`
+- 依赖：Python 3
+- 特色：
+  - ✅ 67种设计风格（glassmorphism, brutalism, neumorphism等）
+  - ✅ 96种配色方案
+  - ✅ 13个技术栈指南（React, Vue, Tailwind, Flutter等）
+  - ✅ 25种图表类型
+  - ✅ 完整的UX设计指南（无障碍、动画、响应式）
+  - ✅ 命令行搜索工具
+- 使用方法：
+  ```bash
+  cd ui-ux-pro-max
+  
+  # 获取设计系统建议
+  python3 scripts/search.py "fintech dashboard" --design-system
+  
+  # 搜索特定领域
+  python3 scripts/search.py "dark mode" --domain style
+  python3 scripts/search.py "elegant font" --domain typography
+  python3 scripts/search.py "real-time chart" --domain chart
+  
+  # 获取技术栈指南
+  python3 scripts/search.py "responsive form" --stack html-tailwind
+  python3 scripts/search.py "performance" --stack react
+  ```
+
 ## 目录结构
 
 ```
@@ -107,6 +136,35 @@ openclaw-skills/
 │   └── references/
 │       ├── PROMPT_GUIDE.md         # 提示词工程指南
 │       └── MODEL_COMPARISON.md     # 模型选择指南
+├── ui-ux-pro-max/                  # NEW!
+│   ├── SKILL.md                    # 完整使用文档
+│   ├── scripts/
+│   │   ├── search.py               # 主搜索脚本
+│   │   ├── core.py                 # 核心搜索逻辑
+│   │   └── design_system.py        # 设计系统生成
+│   └── data/
+│       ├── styles.csv              # 67种设计风格
+│       ├── colors.csv              # 96种配色方案
+│       ├── typography.csv          # 字体搭配
+│       ├── charts.csv              # 图表类型
+│       ├── landing.csv             # Landing页面结构
+│       ├── products.csv            # 产品类型
+│       ├── icons.csv               # 图标规范
+│       ├── ux-guidelines.csv       # UX设计指南
+│       ├── ui-reasoning.csv        # UI设计推理
+│       ├── web-interface.csv       # Web界面规范
+│       ├── react-performance.csv   # React性能优化
+│       ├── landing.csv             # Landing页面
+│       └── stacks/                 # 技术栈指南
+│           ├── html-tailwind.csv
+│           ├── react.csv
+│           ├── vue.csv
+│           ├── nextjs.csv
+│           ├── svelte.csv
+│           ├── flutter.csv
+│           ├── swiftui.csv
+│           ├── react-native.csv
+│           └── ...
 └── ... (更多技能待添加)
 ```
 
