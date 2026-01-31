@@ -29,6 +29,19 @@ OpenClaw AI Agent的实用技能集合，包含自动化任务、语音播报、
   ./scripts/install_service.sh      # 安装为后台服务
   ```
 
+### 🤖 claude-code-runner
+- 功能：调用Claude Code CLI进行代码生成、分析和调试
+- 作者：ET
+- 路径：`claude-code-runner/`
+- 依赖：Claude Code CLI (`/opt/homebrew/bin/claude`)
+- 使用方法：
+  ```bash
+  cd claude-code-runner
+  ./scripts/run.sh 'Create a Python function'  # 生成代码
+  ./scripts/run.sh 'Review my code' --file mycode.py  # 代码审查
+  ./scripts/examples.sh  # 查看更多示例
+  ```
+
 ## 目录结构
 
 ```
@@ -48,6 +61,12 @@ openclaw-skills/
 │       ├── start_monitoring.sh
 │       ├── install_service.sh
 │       └── config.py
+├── claude-code-runner/
+│   ├── SKILL.md
+│   └── scripts/
+│       ├── run.sh
+│       ├── install.sh
+│       └── examples.sh
 └── ... (更多技能待添加)
 ```
 
