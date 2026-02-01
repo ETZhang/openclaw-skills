@@ -353,6 +353,13 @@ openclaw-skills/
 │   ├── demo.html                   # 🎮 交互式演示页面
 │   └── js/
 │       └── xiaot.js                # 3D渲染核心代码
+├── webrtc-vad/                     # NEW!
+│   ├── SKILL.md                    # 完整使用文档
+│   ├── .gitignore                  # 排除敏感文件
+│   ├── demo-webrtc.html            # 🎮 WebRTC+VAD演示
+│   └── js/
+│       ├── vad.js                  # 语音活动检测模块
+│       └── webrtc.js               # WebRTC通信模块
 └── ... (更多技能待添加)
 ```
 
