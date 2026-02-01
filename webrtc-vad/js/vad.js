@@ -62,6 +62,18 @@ class XiaotVAD {
 
     // 从音频流启动
     startFromStream(stream) {
+        // 确保 audioContext 存在
+        if (!this.audioContext) {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)({
+                sampleRate: this.config.samplingRate
+            });
+        }
+        
+        // 如果 audioContext 暂停了，需要恢复
+        if (this.audioContext.state === 'suspended') {
+            this.audioContext.resume();
+        }
+        
         const source = this.audioContext.createMediaStreamSource(stream);
         this.analyser = this.audioContext.createAnalyser();
         this.analyser.fftSize = 512;
@@ -151,8 +163,8 @@ class XiaotVAD {
 
     // 获取高频能量 (1000Hz+)
     getHighFrequencyEnergy() {
-        const lowFreqCount = Math.floor(1000 / (Rate / this.analyser.fftSize));
-        let energythis.config.sampling = 0;
+        const lowFreqCount = Math.floor(1000 / (this.config.samplingRate / this.analyser.fftSize));
+        let energy = 0;
         for (let i = lowFreqCount; i < this.dataArray.length; i++) {
             energy += this.dataArray[i] * this.dataArray[i];
         }
