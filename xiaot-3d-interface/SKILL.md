@@ -1,16 +1,17 @@
 ---
 name: xiaot-3d-interface
-description: "小T 3D interface - Jarvis-like holographic AI assistant interface. Features: 3D avatar, particle effects, voice wave visualization, speech animations, system status display. Built with Three.js. Topics: 3D graphics, holographic interface, AI avatar, visual effects, animation."
+description: "小T 3D interface - 3D AI assistant with emotions and particle effects. Features: 3D avatar, particle effects, emotion colors, speech animations, system status display. Built with Three.js. Topics: 3D graphics, AI avatar, visual effects, animation."
 ---
 
 # 小T 3D Interface
 
-钢铁侠贾维斯风格的 3D 全息 AI 助手界面。使用 Three.js 构建，支持实时动画和语音可视化。
+小T 3D AI 助手界面。使用 Three.js 构建，支持实时动画和情绪表达。
 
 ## Features
 
 - 🤖 **3D 头像** - 可爱的 AI 助手小T
 - ✨ **粒子效果** - 全息数据流效果
+- 🎨 **情绪颜色** - 7种情绪对应不同颜色
 - 🔊 **语音波形** - 实时音频可视化
 - 🗣️ **表情动画** - 说话、思考、聆听状态
 - 📊 **系统状态** - CPU、内存、网络监控

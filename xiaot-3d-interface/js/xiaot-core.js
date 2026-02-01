@@ -8,16 +8,17 @@ class XiaotInterface {
     constructor(options = {}) {
         this.config = {
             container: '#container',
-            theme: 'jarvis',
+            theme: 'xiaot',  // 默认主题
             particles: true,
             autostart: true,
             ...options
         };
 
         this.themes = {
-            jarvis: { primary: 0x00FFFF, accent: 0x00FFFF, particle: 0x00FFFF },
-            hal: { primary: 0xFF0000, accent: 0xFF3333, particle: 0xFF3333 },
-            gold: { primary: 0xFFAA00, accent: 0xFFDD44, particle: 0xFFDD44 }
+            xiaot: { primary: 0x00FFFF, accent: 0x00FFFF, particle: 0x00FFFF },  // 小T主题 - 青色
+            cyan: { primary: 0x00FFFF, accent: 0x00FFFF, particle: 0x00FFFF },
+            purple: { primary: 0x6B5BFF, accent: 0x8888FF, particle: 0x8888FF },
+            orange: { primary: 0xFF6B00, accent: 0xFFAA00, particle: 0xFFAA00 }
         };
 
         // 情绪颜色系统

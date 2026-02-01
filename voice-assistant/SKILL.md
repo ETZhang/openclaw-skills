@@ -8,7 +8,7 @@
 - 🗣️ **STT语音识别** - Web Speech API 中文识别
 - 🤖 **OpenClaw集成** - 发送消息到OpenClaw处理
 - 🔊 **TTS语音合成** - 中文语音回复
-- 🎨 **3D界面** - Jarvis风格全息头像
+- 🎨 **3D界面** - 小T风格全息头像
 - 💬 **对话历史** - 实时显示对话内容
 
 ## Setup
@@ -191,7 +191,7 @@ python3 -m http.server 8080
 - 🎤 Click to start/stop voice conversation
 - 📊 VAD visualization (probability meter)
 - 💬 Real-time chat history
-- 🎨 3D Jarvis-style avatar
+- 🎨 3D 小T风格 avatar
 - 🔧 OpenClaw connection config
 - 🔊 TTS test button
 

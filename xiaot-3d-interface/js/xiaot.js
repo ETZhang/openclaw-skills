@@ -1,13 +1,13 @@
 /**
- * 小T 3D Interface v4 - Jarvis Style
- * Based on Iron Man Jarvis Particle System
+ * 小T 3D Interface v4
+ * 3D AI Assistant with Emotions
  */
 
 class XiaotInterface {
     constructor(options = {}) {
         this.config = {
             container: '#xiaot-container',
-            theme: 'jarvis',
+            theme: 'xiaot',  // 小T主题
             avatar: 'core',
             particles: true,
             autostart: true,
@@ -16,7 +16,7 @@ class XiaotInterface {
             ...options
         };
 
-        // Jarvis配色
+        // 小T配色
         this.themes = {
             jarvis: { 
                 primary: 0x00FFFF,    // 青色
@@ -117,7 +117,7 @@ class XiaotInterface {
 
         this.animate();
         this.isInitialized = true;
-        console.log('✅ 小T Jarvis Style initialized!');
+        console.log('✅ 小T 3D Interface initialized!');
     }
 
     addLights() {
@@ -242,7 +242,7 @@ class XiaotInterface {
     }
 
     createParticles() {
-        // Jarvis风格粒子 - 球面分布
+        // 小T粒子 - 球面分布
         const geometry = new THREE.BufferGeometry();
         const positions = [];
         const colors = [];
@@ -250,7 +250,7 @@ class XiaotInterface {
         const randoms = [];
 
         for (let i = 0; i < this.particleCount; i++) {
-            // 球面分布 ( Jarvis 风格)
+            // 球面分布 ( 小T风格)
             const phi = Math.acos(2 * Math.random() - 1);
             const theta = Math.random() * Math.PI * 2;
 
@@ -458,7 +458,7 @@ class XiaotInterface {
             const oy = this.originalPositions[originalI3 + 1];
             const oz = this.originalPositions[originalI3 + 2];
 
-            // 噪声动画 (Jarvis风格)
+            // 噪声动画 (小T风格)
             const noiseX = Math.sin(time * 0.5 + randoms[i3] * 10) * 0.03;
             const noiseY = Math.cos(time * 0.3 + randoms[i3 + 1] * 10) * 0.03;
             const noiseZ = Math.sin(time * 0.4 + randoms[i3 + 2] * 10) * 0.03;
