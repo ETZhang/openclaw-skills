@@ -1,0 +1,21 @@
+# Sensitive Files
+.env
+.env.local
+credentials.json
+
+# Cache
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+
+# Logs
+*.log

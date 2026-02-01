@@ -376,7 +376,18 @@
         
         async function startVAD() {
             try {
-                await vad.init();
+                // 初始化 VAD
+                const vadInitialized = await vad.init();
+                if (!vadInitialized) {
+                    throw new Error('VAD 初始化失败');
+                }
+                
+                // 检查音频上下文状态
+                if (vad.audioContext && vad.audioContext.state === 'suspended') {
+                    await vad.audioContext.resume();
+                }
+                
+                // 开始监听
                 await vad.startFromMicrophone();
                 
                 isListening = true;
@@ -388,7 +399,13 @@
                 addChatMessage('system', '🎤 开始监听，请说话...');
             } catch (e) {
                 console.error('❌ VAD start failed:', e);
-                addChatMessage('system', '❌ 无法访问麦克风，请检查权限');
+                addChatMessage('system', '❌ 无法访问麦克风: ' + e.message);
+                
+                // 显示更详细的帮助信息
+                if (e.name === 'NotAllowedError') {
+                    addChatMessage('system', '💡 请在浏览器地址栏左侧点击"🔒"，允许麦克风权限');
+                    addChatMessage('system', '💡 或检查系统设置 > 隐私 > 麦克风');
+                }
             }
         }
         
@@ -414,13 +431,19 @@
             
             // Update bar
             const bar = document.getElementById('vadBar');
-            bar.style.width = status.probability * 100 + '%';
+            bar.style.width = (status.probability * 100) + '%';
             
-            // Color based on probability
-            if (status.probability > 0.5) {
+            // Color based on probability and speech status
+            if (status.isSpeech) {
                 bar.style.background = 'linear-gradient(90deg, #FF69B4, #FF3333)';
+                setVADStatus('说话中!', '#FF69B4');
+            } else if (status.probability > 0.5) {
+                bar.style.background = 'linear-gradient(90deg, #FF6B00, #FF3333)';
+                setVADStatus('检测中...', '#FF6B00');
             } else {
                 bar.style.background = 'linear-gradient(90deg, #00FFFF, #0099FF)';
+                setVADStatus(status.probability > 0.3 ? '有声音' : '静音', 
+                    status.probability > 0.3 ? '#FF6B00' : '#00FFFF');
             }
         }
         
