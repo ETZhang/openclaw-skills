@@ -173,6 +173,23 @@ while True:
     listen_and_respond()
 ```
 
+## Demo: Voice Conversation with 小T
+
+Open `demo-voice.html` for a complete voice conversation demo:
+
+```bash
+cd speech-to-text
+python3 -m http.server 8080
+# Visit http://localhost:8080/demo-voice.html
+```
+
+### Features:
+- 🎤 Click microphone to record (5 seconds auto-stop)
+- 💬 Show transcribed text in chat
+- 😊 Emotion changes during conversation
+- 🔊 Simulated TTS response
+- 💬 Chat history display
+
 ## Troubleshooting
 
 ### "ffmpeg not found" Error
