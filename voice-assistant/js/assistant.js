@@ -6,7 +6,7 @@
 class XiaotVoiceAssistant {
     constructor(options = {}) {
         this.config = {
-            openclawUrl: 'http://localhost:11434',
+            backendUrl: 'http://127.0.0.1:18790',  // 小T后端服务器地址
             openclawSession: 'main',
             vadThreshold: 0.5,
             vadSilenceDuration: 0.8,
@@ -14,7 +14,7 @@ class XiaotVoiceAssistant {
             ttsVoice: 'Google 普通话（中国大陆）',
             ttsRate: 1.0,
             ttsPitch: 1.0,
-            useMockResponse: true,  // 默认使用模拟回复
+            useMockResponse: false,  // 默认使用真实 OpenClaw
             ...options
         };
 
@@ -263,43 +263,45 @@ class XiaotVoiceAssistant {
         await this.sendToOpenClaw(transcript);
     }
 
-    // 发送到OpenClaw
+    // 发送到小T后端服务器 (通过 HTTP，避免与 OpenClaw WebSocket 冲突)
     async sendToOpenClaw(message) {
         try {
-            console.log('📤 Sending to OpenClaw:', message);
+            console.log('📤 发送到小T后端:', message);
             this.updateStatus('processing', '思考中...');
 
-            // 先检查OpenClaw是否可用
-            const healthCheck = await fetch(`${this.config.openclawUrl}/api/status`, {
-                method: 'GET',
-                signal: AbortSignal.timeout(2000)
-            }).catch(() => null);
+            // 使用小T后端服务器 HTTP API
+            const response = await fetch(`${this.config.backendUrl}/agent`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: message,
+                    agent: this.config.openclawSession
+                }),
+                signal: AbortSignal.timeout(30000) // 30秒超时
+            });
 
-            if (healthCheck && healthCheck.ok) {
-                // OpenClaw可用
-                const response = await fetch(
-                    `${this.config.openclawUrl}/api/sessions/${this.config.openclawSession}/messages`,
-                    {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ message: message })
-                    }
-                );
-
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                const data = await response.json();
-                
-                console.log('📥 From OpenClaw:', data);
-                if (this.onResponse) this.onResponse(data);
-                
-                if (data.response) await this.speak(data.response);
-            } else {
-                throw new Error('OpenClaw not available');
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
 
+            const data = await response.json();
+
+            console.log('📥 从后端收到响应:', data);
+
+            // 后端返回格式: { response: "...", fromMock: false }
+            let responseText = data.response || '';
+
+            if (this.onResponse) {
+                this.onResponse({ response: responseText, fromMock: data.fromMock || false });
+            }
+
+            if (responseText) await this.speak(responseText);
+
         } catch (e) {
-            console.warn('⚠️ OpenClaw not available, using mock:', e.message);
-            
+            console.warn('⚠️ 后端服务调用失败，使用模拟回复:', e.message);
+
             // 使用模拟回复
             const mockResponses = [
                 `好的，我听到了"${message}"`,
@@ -309,7 +311,7 @@ class XiaotVoiceAssistant {
                 `"${message}" - 这是个有意思的话题`
             ];
             const mockResponse = mockResponses[Math.floor(Math.random() * mockResponses.length)];
-            
+
             if (this.onResponse) {
                 this.onResponse({ response: mockResponse, fromMock: true });
             }

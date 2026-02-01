@@ -299,12 +299,12 @@
         
         <!-- OpenClaw配置 -->
         <div class="config-section">
-            <h3>🔗 OpenClaw 连接</h3>
-            <input type="text" class="config-input" id="openclawUrl" 
-                   placeholder="OpenClaw URL (默认: http://localhost:11434)" 
-                   value="http://localhost:11434">
-            <input type="text" class="config-input" id="sessionId" 
-                   placeholder="会话ID (默认: main)" 
+            <h3>🔗 小T 后端服务</h3>
+            <input type="text" class="config-input" id="openclawUrl"
+                   placeholder="后端 URL (默认: http://127.0.0.1:18790)"
+                   value="http://127.0.0.1:18790">
+            <input type="text" class="config-input" id="sessionId"
+                   placeholder="会话ID (默认: main)"
                    value="main">
             <div class="openclaw-status">
                 <div class="status-dot" id="ocStatusDot"></div>
@@ -416,7 +416,7 @@
                 
                 // 创建助手
                 assistant = new XiaotVoiceAssistant({
-                    openclawUrl: document.getElementById('openclawUrl').value || 'http://localhost:11434',
+                    backendUrl: document.getElementById('openclawUrl').value || 'http://127.0.0.1:18790',
                     openclawSession: document.getElementById('sessionId').value || 'main',
                     vadThreshold: 0.5,
                     sttLanguage: 'zh-CN'
