@@ -9,12 +9,11 @@ class XiaotVoiceAssistant {
             openclawUrl: 'http://localhost:11434',
             openclawSession: 'main',
             vadThreshold: 0.5,
-            vadSilenceDuration: 0.8,
+            vadSilenceDuration: 1.0,  // 延长静音时间
             sttLanguage: 'zh-CN',
             ttsVoice: 'Google 普通话（中国大陆）',
             ttsRate: 1.0,
             ttsPitch: 1.0,
-            autoListen: true,
             ...options
         };
 
@@ -23,12 +22,10 @@ class XiaotVoiceAssistant {
         this.isListening = false;
         this.isSpeaking = false;
         this.isProcessing = false;
+        this.isUserSpeaking = false;  // 标记用户是否在说话
 
-        // 状态
-        this.conversationHistory = [];
-        this.lastSpeechTime = null;
-        this.finalTranscript = '';  // 保存最终转录
-        this.interimTranscript = ''; // 保存临时转录
+        // 转录
+        this.currentTranscript = '';   // 当前完整的转录
 
         // 回调
         this.onStatusChange = null;
@@ -51,8 +48,20 @@ class XiaotVoiceAssistant {
             await this.vad.init();
 
             // VAD回调
-            this.vad.onSpeechStart = () => this.handleSpeechStart();
-            this.vad.onSpeechEnd = () => this.handleSpeechEnd();
+            this.vad.onSpeechStart = () => {
+                // 只有不在说话时才认为是用户说话
+                if (!this.isSpeaking) {
+                    this.isUserSpeaking = true;
+                    this.currentTranscript = '';  // 清空转录
+                    this.handleSpeechStart();
+                }
+            };
+            this.vad.onSpeechEnd = () => {
+                if (!this.isSpeaking) {
+                    this.isUserSpeaking = false;
+                    this.handleSpeechEnd();
+                }
+            };
             this.vad.onVADUpdate = (status) => this.handleVADUpdate(status);
 
             // 初始化语音合成
@@ -95,35 +104,28 @@ class XiaotVoiceAssistant {
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         this.stt = new SpeechRecognition();
-        this.stt.continuous = true;  // 持续识别
+        this.stt.continuous = false;  // 不持续识别
         this.stt.interimResults = true;
         this.stt.lang = this.config.sttLanguage;
 
         this.stt.onresult = (event) => {
-            let interim = '';
-            let final = '';
+            // 只在用户说话时处理
+            if (!this.isUserSpeaking || this.isSpeaking) return;
 
+            let final = '';
             for (let i = event.resultIndex; i < event.results.length; i++) {
-                const transcript = event.results[i][0].transcript;
                 if (event.results[i].isFinal) {
-                    final += transcript;
-                } else {
-                    interim += transcript;
+                    final += event.results[i][0].transcript;
                 }
             }
 
-            // 保存转录结果
-            if (final) {
-                this.finalTranscript += final;
-                console.log('📝 Final:', final);
-            }
-            if (interim) {
-                this.interimTranscript = interim;
-                console.log('📝 Interim:', interim);
-            }
-
-            if (this.onTranscript) {
-                this.onTranscript(this.finalTranscript || interim, !!final);
+            // 如果有最终结果，处理它
+            if (final.trim()) {
+                console.log('📝 Final transcript:', final);
+                this.currentTranscript = final.trim();
+                if (this.onTranscript) {
+                    this.onTranscript(this.currentTranscript, true);
+                }
             }
         };
 
@@ -132,16 +134,18 @@ class XiaotVoiceAssistant {
             if (event.error === 'not-allowed') {
                 if (this.onError) this.onError(new Error('麦克风权限被拒绝'));
             }
+            // 出错后重启
+            if (this.isListening && this.isUserSpeaking) {
+                setTimeout(() => {
+                    try { this.stt.start(); } catch(e) {}
+                }, 1000);
+            }
         };
 
         this.stt.onend = () => {
-            console.log('🔇 STT ended');
-            if (this.isListening && !this.isProcessing) {
-                try {
-                    this.stt.start();
-                } catch (e) {
-                    console.warn('STT restart failed:', e);
-                }
+            // 如果用户还在说话，继续识别
+            if (this.isListening && this.isUserSpeaking) {
+                try { this.stt.start(); } catch(e) {}
             }
         };
 
@@ -151,20 +155,16 @@ class XiaotVoiceAssistant {
     // 开始监听
     async startListening() {
         try {
-            // 清空转录结果
-            this.finalTranscript = '';
-            this.interimTranscript = '';
+            // 清空状态
+            this.currentTranscript = '';
+            this.isUserSpeaking = false;
 
             await this.vad.startFromMicrophone();
             this.isListening = true;
 
             // 开始STT
             if (this.stt) {
-                try {
-                    this.stt.start();
-                } catch (e) {
-                    console.warn('STT start failed:', e);
-                }
+                try { this.stt.start(); } catch (e) { console.warn('STT start failed:', e); }
             }
 
             this.updateStatus('listening', '监听中...');
@@ -180,13 +180,10 @@ class XiaotVoiceAssistant {
     stopListening() {
         this.vad.stop();
         this.isListening = false;
+        this.isUserSpeaking = false;
 
         if (this.stt) {
-            try {
-                this.stt.stop();
-            } catch (e) {
-                console.warn('STT stop failed:', e);
-            }
+            try { this.stt.stop(); } catch (e) {}
         }
 
         this.updateStatus('idle', '待机');
@@ -195,29 +192,24 @@ class XiaotVoiceAssistant {
 
     // 处理语音开始
     handleSpeechStart() {
-        console.log('🎤 Speech started');
+        console.log('🎤 User speech started');
         this.updateStatus('speech', '听到你说话了...');
-        this.lastSpeechTime = Date.now();
     }
 
     // 处理语音结束
     async handleSpeechEnd() {
-        console.log('🔇 Speech ended');
-        
-        // 等待一小会儿获取最终转录
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // 使用转录结果
-        const transcript = (this.finalTranscript || this.interimTranscript).trim();
-        
+        console.log('🔇 User speech ended');
+
+        // 等待最后的结果
+        await new Promise(resolve => setTimeout(resolve, 300));
+
+        const transcript = this.currentTranscript.trim();
+
         if (transcript) {
             console.log('📝 Using transcript:', transcript);
-            this.processVoiceInput(transcript);
+            await this.processVoiceInput(transcript);
         } else {
-            // 没有检测到有效语音，继续监听
             console.log('⚠️ No transcript, continuing...');
-            this.interimTranscript = '';
-            this.finalTranscript = '';
             this.updateStatus('listening', '监听中...');
         }
     }
@@ -225,15 +217,12 @@ class XiaotVoiceAssistant {
     // 处理语音输入
     async processVoiceInput(transcript) {
         this.isProcessing = true;
-        
+        this.currentTranscript = '';  // 清空，防止重复
+
         // 触发转录回调
         if (this.onTranscript) {
             this.onTranscript(transcript, true);
         }
-
-        // 清空，为下一次识别做准备
-        this.interimTranscript = '';
-        this.finalTranscript = '';
 
         // 发送到OpenClaw
         await this.sendToOpenClaw(transcript);
@@ -245,70 +234,45 @@ class XiaotVoiceAssistant {
             console.log('📤 Sending to OpenClaw:', message);
             this.updateStatus('processing', '思考中...');
 
-            // 发送到OpenClaw消息API
             const response = await fetch(`${this.config.openclawUrl}/api/sessions/${this.config.openclawSession}/messages`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    message: message
-                })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: message })
             });
 
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
             const data = await response.json();
             console.log('📥 Received from OpenClaw:', data);
 
-            if (this.onResponse) {
-                this.onResponse(data);
-            }
+            if (this.onResponse) this.onResponse(data);
 
             // 语音回复
-            if (data.response) {
-                await this.speak(data.response);
-            }
+            if (data.response) await this.speak(data.response);
 
         } catch (e) {
             console.error('❌ OpenClaw API error:', e);
-            
-            // 模拟回复（开发用）
-            const mockResponse = await this.getMockResponse(message);
-            if (this.onResponse) {
-                this.onResponse({ response: mockResponse });
-            }
+            // 模拟回复
+            const mockResponse = `收到："${message}"`;
+            if (this.onResponse) this.onResponse({ response: mockResponse });
             await this.speak(mockResponse);
         } finally {
             this.isProcessing = false;
         }
     }
 
-    // 模拟回复（开发/测试用）
-    async getMockResponse(message) {
-        const responses = [
-            `我听到了："${message}"`,
-            `好的，让我帮你查一下"${message}"`,
-            `"${message}"...这个很有意思！`,
-            `收到，我已经记住了"${message}"`,
-            `关于"${message}"，我的看法是...`
-        ];
-        return responses[Math.floor(Math.random() * responses.length)];
-    }
-
     // 语音合成
     async speak(text) {
-        if (this.isSpeaking) {
-            this.synth.cancel();
-        }
+        if (this.isSpeaking) this.synth.cancel();
 
         this.isSpeaking = true;
         this.updateStatus('speaking', '说话中...');
 
-        if (this.onSpeakingStart) {
-            this.onSpeakingStart();
+        if (this.onSpeakingStart) this.onSpeakingStart();
+
+        // 说话时停止STT和VAD，防止回声识别
+        if (this.stt) {
+            try { this.stt.stop(); } catch (e) {}
         }
 
         return new Promise((resolve) => {
@@ -317,35 +281,26 @@ class XiaotVoiceAssistant {
             utterance.rate = this.config.ttsRate;
             utterance.pitch = this.config.ttsPitch;
 
-            // 选择语音
             const voice = this.ttsVoices.find(v => 
                 v.name.includes('Google 普通话') || 
                 v.name.includes('Microsoft') ||
                 v.lang.includes('zh')
             );
-            if (voice) {
-                utterance.voice = voice;
-            }
+            if (voice) utterance.voice = voice;
 
             utterance.onend = () => {
                 this.isSpeaking = false;
                 this.updateStatus('listening', '监听中...');
-                
-                if (this.onSpeakingEnd) {
-                    this.onSpeakingEnd();
-                }
+                if (this.onSpeakingEnd) this.onSpeakingEnd();
 
-                // 继续监听
+                // 说话结束后恢复监听
                 if (this.isListening) {
                     setTimeout(() => {
-                        if (this.stt && this.isListening) {
-                            try {
-                                this.stt.start();
-                            } catch (e) {}
+                        if (this.stt && !this.isUserSpeaking) {
+                            try { this.stt.start(); } catch (e) {}
                         }
-                    }, 300);
+                    }, 500);
                 }
-
                 resolve();
             };
 
@@ -360,15 +315,11 @@ class XiaotVoiceAssistant {
     }
 
     // 处理VAD更新
-    handleVADUpdate(status) {
-        // 可以在UI中显示音量级别
-    }
+    handleVADUpdate(status) {}
 
     // 更新状态
     updateStatus(state, message) {
-        if (this.onStatusChange) {
-            this.onStatusChange(state, message);
-        }
+        if (this.onStatusChange) this.onStatusChange(state, message);
     }
 
     // 打断说话
@@ -382,14 +333,11 @@ class XiaotVoiceAssistant {
     dispose() {
         this.stopListening();
         this.interrupt();
-        if (this.vad) {
-            this.vad.dispose();
-        }
+        if (this.vad) this.vad.dispose();
         console.log('🧹 XiaotVoiceAssistant disposed');
     }
 }
 
-// 导出
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = XiaotVoiceAssistant;
 }
