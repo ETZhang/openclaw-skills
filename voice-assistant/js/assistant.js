@@ -9,23 +9,30 @@ class XiaotVoiceAssistant {
             openclawUrl: 'http://localhost:11434',
             openclawSession: 'main',
             vadThreshold: 0.5,
-            vadSilenceDuration: 1.0,  // 延长静音时间
+            vadSilenceDuration: 0.8,
             sttLanguage: 'zh-CN',
             ttsVoice: 'Google 普通话（中国大陆）',
             ttsRate: 1.0,
             ttsPitch: 1.0,
+            useMockResponse: true,  // 默认使用模拟回复
             ...options
         };
 
         // 模块
         this.vad = null;
+        this.stt = null;
+        this.synth = null;
+        this.ttsVoices = [];
+
+        // 状态
         this.isListening = false;
         this.isSpeaking = false;
         this.isProcessing = false;
-        this.isUserSpeaking = false;  // 标记用户是否在说话
 
         // 转录
-        this.currentTranscript = '';   // 当前完整的转录
+        this.finalTranscript = '';
+        this.isUserSpeaking = false;
+        this.sttActive = false;
 
         // 回调
         this.onStatusChange = null;
@@ -44,15 +51,13 @@ class XiaotVoiceAssistant {
                 threshold: this.config.vadThreshold,
                 minSilenceDuration: this.config.vadSilenceDuration
             });
-
             await this.vad.init();
 
             // VAD回调
             this.vad.onSpeechStart = () => {
-                // 只有不在说话时才认为是用户说话
                 if (!this.isSpeaking) {
                     this.isUserSpeaking = true;
-                    this.currentTranscript = '';  // 清空转录
+                    this.finalTranscript = '';
                     this.handleSpeechStart();
                 }
             };
@@ -64,13 +69,14 @@ class XiaotVoiceAssistant {
             };
             this.vad.onVADUpdate = (status) => this.handleVADUpdate(status);
 
-            // 初始化语音合成
+            // 初始化TTS
             this.initTTS();
 
-            // 初始化语音识别
+            // 初始化STT
             this.initSTT();
 
             console.log('✅ XiaotVoiceAssistant initialized');
+            console.log('📝 Use mock responses:', this.config.useMockResponse);
             return true;
         } catch (e) {
             console.error('❌ Init failed:', e);
@@ -86,7 +92,7 @@ class XiaotVoiceAssistant {
 
         const loadVoices = () => {
             this.ttsVoices = this.synth.getVoices();
-            console.log(`🎤 Loaded ${this.ttsVoices.length} TTS voices`);
+            console.log(`🎤 TTS voices loaded: ${this.ttsVoices.length}`);
         };
 
         loadVoices();
@@ -104,68 +110,81 @@ class XiaotVoiceAssistant {
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         this.stt = new SpeechRecognition();
-        this.stt.continuous = false;  // 不持续识别
+        this.stt.continuous = true;
         this.stt.interimResults = true;
         this.stt.lang = this.config.sttLanguage;
 
         this.stt.onresult = (event) => {
-            // 只在用户说话时处理
-            if (!this.isUserSpeaking || this.isSpeaking) return;
+            if (this.isSpeaking) return;
 
+            let interim = '';
             let final = '';
+
             for (let i = event.resultIndex; i < event.results.length; i++) {
+                const text = event.results[i][0].transcript;
                 if (event.results[i].isFinal) {
-                    final += event.results[i][0].transcript;
+                    final += text;
+                } else {
+                    interim += text;
                 }
             }
 
-            // 如果有最终结果，处理它
             if (final.trim()) {
-                console.log('📝 Final transcript:', final);
-                this.currentTranscript = final.trim();
+                this.finalTranscript = final.trim();
                 if (this.onTranscript) {
-                    this.onTranscript(this.currentTranscript, true);
+                    this.onTranscript(this.finalTranscript, true);
                 }
             }
         };
 
         this.stt.onerror = (event) => {
             console.error('❌ STT error:', event.error);
-            if (event.error === 'not-allowed') {
-                if (this.onError) this.onError(new Error('麦克风权限被拒绝'));
-            }
-            // 出错后重启
-            if (this.isListening && this.isUserSpeaking) {
-                setTimeout(() => {
-                    try { this.stt.start(); } catch(e) {}
-                }, 1000);
+            this.sttActive = false;
+            
+            // 自动重启
+            if (event.error !== 'not-allowed' && this.isListening && !this.isSpeaking) {
+                setTimeout(() => this.restartSTT(), 1000);
             }
         };
 
         this.stt.onend = () => {
-            // 如果用户还在说话，继续识别
-            if (this.isListening && this.isUserSpeaking) {
-                try { this.stt.start(); } catch(e) {}
+            this.sttActive = false;
+            // 自动重启
+            if (this.isListening && !this.isSpeaking && this.isUserSpeaking) {
+                setTimeout(() => this.restartSTT(), 100);
             }
         };
 
         console.log('🎤 STT initialized');
     }
 
+    // 重启STT
+    restartSTT() {
+        if (!this.stt || !this.isListening || this.isSpeaking) return;
+        
+        try {
+            if (this.sttActive) return;
+            this.stt.start();
+            this.sttActive = true;
+            console.log('🔄 STT restarted');
+        } catch (e) {
+            console.warn('STT restart failed:', e);
+        }
+    }
+
     // 开始监听
     async startListening() {
         try {
-            // 清空状态
-            this.currentTranscript = '';
+            // 重置状态
+            this.finalTranscript = '';
             this.isUserSpeaking = false;
+            this.sttActive = false;
 
             await this.vad.startFromMicrophone();
             this.isListening = true;
 
-            // 开始STT
-            if (this.stt) {
-                try { this.stt.start(); } catch (e) { console.warn('STT start failed:', e); }
-            }
+            // 启动STT
+            this.startSTT();
 
             this.updateStatus('listening', '监听中...');
             console.log('🎤 Started listening');
@@ -176,6 +195,18 @@ class XiaotVoiceAssistant {
         }
     }
 
+    // 启动STT
+    startSTT() {
+        if (this.stt && !this.sttActive && !this.isSpeaking) {
+            try {
+                this.stt.start();
+                this.sttActive = true;
+            } catch (e) {
+                console.warn('STT start failed:', e);
+            }
+        }
+    }
+
     // 停止监听
     stopListening() {
         this.vad.stop();
@@ -183,7 +214,10 @@ class XiaotVoiceAssistant {
         this.isUserSpeaking = false;
 
         if (this.stt) {
-            try { this.stt.stop(); } catch (e) {}
+            try {
+                this.stt.stop();
+            } catch (e) {}
+            this.sttActive = false;
         }
 
         this.updateStatus('idle', '待机');
@@ -192,39 +226,40 @@ class XiaotVoiceAssistant {
 
     // 处理语音开始
     handleSpeechStart() {
-        console.log('🎤 User speech started');
+        console.log('🎤 Speech started');
         this.updateStatus('speech', '听到你说话了...');
     }
 
     // 处理语音结束
     async handleSpeechEnd() {
-        console.log('🔇 User speech ended');
+        console.log('🔇 Speech ended');
 
-        // 等待最后的结果
-        await new Promise(resolve => setTimeout(resolve, 300));
+        // 等待最后结果
+        await new Promise(resolve => setTimeout(resolve, 200));
 
-        const transcript = this.currentTranscript.trim();
+        const transcript = this.finalTranscript.trim();
 
         if (transcript) {
-            console.log('📝 Using transcript:', transcript);
+            console.log('📝 Transcript:', transcript);
+            this.finalTranscript = '';  // 清空
             await this.processVoiceInput(transcript);
         } else {
-            console.log('⚠️ No transcript, continuing...');
+            console.log('⚠️ No transcript');
             this.updateStatus('listening', '监听中...');
+            // 重启STT继续监听
+            setTimeout(() => this.startSTT(), 300);
         }
     }
 
     // 处理语音输入
     async processVoiceInput(transcript) {
         this.isProcessing = true;
-        this.currentTranscript = '';  // 清空，防止重复
 
-        // 触发转录回调
         if (this.onTranscript) {
             this.onTranscript(transcript, true);
         }
 
-        // 发送到OpenClaw
+        // 发送到OpenClaw或使用模拟回复
         await this.sendToOpenClaw(transcript);
     }
 
@@ -234,27 +269,50 @@ class XiaotVoiceAssistant {
             console.log('📤 Sending to OpenClaw:', message);
             this.updateStatus('processing', '思考中...');
 
-            const response = await fetch(`${this.config.openclawUrl}/api/sessions/${this.config.openclawSession}/messages`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: message })
-            });
+            // 先检查OpenClaw是否可用
+            const healthCheck = await fetch(`${this.config.openclawUrl}/api/status`, {
+                method: 'GET',
+                signal: AbortSignal.timeout(2000)
+            }).catch(() => null);
 
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            if (healthCheck && healthCheck.ok) {
+                // OpenClaw可用
+                const response = await fetch(
+                    `${this.config.openclawUrl}/api/sessions/${this.config.openclawSession}/messages`,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message: message })
+                    }
+                );
 
-            const data = await response.json();
-            console.log('📥 Received from OpenClaw:', data);
-
-            if (this.onResponse) this.onResponse(data);
-
-            // 语音回复
-            if (data.response) await this.speak(data.response);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const data = await response.json();
+                
+                console.log('📥 From OpenClaw:', data);
+                if (this.onResponse) this.onResponse(data);
+                
+                if (data.response) await this.speak(data.response);
+            } else {
+                throw new Error('OpenClaw not available');
+            }
 
         } catch (e) {
-            console.error('❌ OpenClaw API error:', e);
-            // 模拟回复
-            const mockResponse = `收到："${message}"`;
-            if (this.onResponse) this.onResponse({ response: mockResponse });
+            console.warn('⚠️ OpenClaw not available, using mock:', e.message);
+            
+            // 使用模拟回复
+            const mockResponses = [
+                `好的，我听到了"${message}"`,
+                `"${message}"...让我想想`,
+                `关于"${message}"，我记下来了`,
+                `收到！"${message}"`,
+                `"${message}" - 这是个有意思的话题`
+            ];
+            const mockResponse = mockResponses[Math.floor(Math.random() * mockResponses.length)];
+            
+            if (this.onResponse) {
+                this.onResponse({ response: mockResponse, fromMock: true });
+            }
             await this.speak(mockResponse);
         } finally {
             this.isProcessing = false;
@@ -263,16 +321,19 @@ class XiaotVoiceAssistant {
 
     // 语音合成
     async speak(text) {
-        if (this.isSpeaking) this.synth.cancel();
+        if (this.synth.speaking) {
+            this.synth.cancel();
+        }
 
         this.isSpeaking = true;
         this.updateStatus('speaking', '说话中...');
 
         if (this.onSpeakingStart) this.onSpeakingStart();
 
-        // 说话时停止STT和VAD，防止回声识别
-        if (this.stt) {
+        // 说话时停止STT
+        if (this.stt && this.sttActive) {
             try { this.stt.stop(); } catch (e) {}
+            this.sttActive = false;
         }
 
         return new Promise((resolve) => {
@@ -293,13 +354,9 @@ class XiaotVoiceAssistant {
                 this.updateStatus('listening', '监听中...');
                 if (this.onSpeakingEnd) this.onSpeakingEnd();
 
-                // 说话结束后恢复监听
+                // 说话结束后恢复STT
                 if (this.isListening) {
-                    setTimeout(() => {
-                        if (this.stt && !this.isUserSpeaking) {
-                            try { this.stt.start(); } catch (e) {}
-                        }
-                    }, 500);
+                    setTimeout(() => this.startSTT(), 500);
                 }
                 resolve();
             };
