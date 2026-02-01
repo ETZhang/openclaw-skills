@@ -388,7 +388,7 @@
             // 3D背景
             xiaot = new XiaotInterface({
                 container: '#container',
-                theme: 'jarvis',
+                theme: 'xiaot',
                 particles: true,
                 autostart: true
             });
@@ -428,9 +428,29 @@
                 };
                 
                 assistant.onTranscript = (text, isFinal) => {
-                    if (isFinal && text.trim()) {
-                        addChatMessage('user', text);
-                        updateOCStatus('processing', '处理中...');
+                    if (text.trim()) {
+                        if (isFinal) {
+                            // 最终结果，显示在用户消息中
+                            const msgDiv = document.getElementById('tempTranscript');
+                            if (msgDiv) {
+                                msgDiv.remove();
+                            }
+                            addChatMessage('user', text);
+                        } else {
+                            // 中间结果，显示临时消息
+                            let tempDiv = document.getElementById('tempTranscript');
+                            if (!tempDiv) {
+                                tempDiv = document.createElement('div');
+                                tempDiv.id = 'tempTranscript';
+                                tempDiv.className = 'chat-message user';
+                                tempDiv.style.opacity = '0.5';
+                                tempDiv.textContent = text + '...';
+                                document.getElementById('chatBox').appendChild(tempDiv);
+                            } else {
+                                tempDiv.textContent = text + '...';
+                            }
+                            document.getElementById('chatBox').scrollTop = document.getElementById('chatBox').scrollHeight;
+                        }
                     }
                 };
                 
