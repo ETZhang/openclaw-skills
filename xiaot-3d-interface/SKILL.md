@@ -289,12 +289,25 @@ xiaot_set_emotion(
 xiaot-3d-interface/
 ├── SKILL.md                 # This file
 ├── .gitignore              # Sensitive files
+├── demo.html               # 🎮 Interactive demo page
 └── js/
-    ├── xiaot.js            # Main 3D interface
+    ├── xiaot.js            # Main 3D interface (24KB)
     ├── avatar.js           # Avatar rendering
     ├── particles.js        # Particle system
     ├── animation.js        # Animation controller
     └── effects.js          # Visual effects
+```
+
+## Quick Demo
+
+Open `demo.html` in a browser to see 小T in action!
+
+```bash
+cd xiaot-3d-interface
+# Open demo.html in your browser
+# Or serve with:
+python3 -m http.server 8080
+# Visit http://localhost:8080/demo.html
 ```
 
 ## Browser Support

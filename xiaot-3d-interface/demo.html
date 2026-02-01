@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小T - AI Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0a0a0f 100%);
+            min-height: 100vh;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+        }
+        
+        #xiaot-container {
+            width: 100vw;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+        }
+        
+        .control-panel {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            padding: 20px;
+            background: rgba(26, 26, 36, 0.9);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 100;
+            max-width: 90%;
+        }
+        
+        .btn {
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .btn-blue { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+        .btn-orange { background: linear-gradient(135deg, #f97316, #ea580c); }
+        .btn-purple { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+        .btn-cyan { background: linear-gradient(135deg, #06b6d4, #0891b2); }
+        .btn-success { background: linear-gradient(135deg, #10b981, #059669); }
+        .btn-warning { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        .btn-danger { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        
+        .status-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            background: rgba(26, 26, 36, 0.9);
+            backdrop-filter: blur(20px);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            z-index: 100;
+        }
+        
+        .status-panel h3 {
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 0;
+            font-size: 14px;
+        }
+        
+        .status-value {
+            font-family: 'JetBrains Mono', monospace;
+            color: #10b981;
+        }
+        
+        .title {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+        }
+        
+        .title h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: white;
+            text-shadow: 0 0 30px rgba(99, 102, 241, 0.5);
+        }
+        
+        .title p {
+            font-size: 14px;
+            color: #64748b;
+        }
+    </style>
+</head>
+<body>
+    <!-- 小T 3D 容器 -->
+    <div id="xiaot-container"></div>
+    
+    <!-- 标题 -->
+    <div class="title">
+        <h1>🤖 小T</h1>
+        <p>AI Assistant Interface</p>
+    </div>
+    
+    <!-- 状态面板 -->
+    <div class="status-panel">
+        <h3>System Status</h3>
+        <div class="status-item">
+            <span>CPU</span>
+            <span class="status-value" id="cpu-display">45%</span>
+        </div>
+        <div class="status-item">
+            <span>Memory</span>
+            <span class="status-value" id="memory-display">68%</span>
+        </div>
+        <div class="status-item">
+            <span>Tasks</span>
+            <span class="status-value" id="tasks-display">156</span>
+        </div>
+    </div>
+    
+    <!-- 控制面板 -->
+    <div class="control-panel">
+        <!-- 动画状态 -->
+        <button class="btn btn-blue" onclick="xiaot.setAnimation('idle')">🛋️ 待机</button>
+        <button class="btn btn-success" onclick="xiaot.setAnimation('speaking')">🗣️ 说话</button>
+        <button class="btn btn-orange" onclick="xiaot.setAnimation('thinking')">🤔 思考</button>
+        <button class="btn btn-purple" onclick="xiaot.setAnimation('listening')">🎧 聆听</button>
+        <button class="btn btn-cyan" onclick="xiaot.setAnimation('excited')">✨ 兴奋</button>
+        <button class="btn btn-warning" onclick="xiaot.setAnimation('sleeping')">😴 睡眠</button>
+        
+        <!-- 情绪 -->
+        <button class="btn btn-success" onclick="xiaot.setEmotion('happy')">😊 开心</button>
+        <button class="btn btn-orange" onclick="xiaot.setEmotion('serious')">😐 严肃</button>
+        <button class="btn btn-cyan" onclick="xiaot.setEmotion('calm')">😌 平静</button>
+        <button class="btn btn-danger" onclick="xiaot.setEmotion('sad')">😢 悲伤</button>
+        <button class="btn btn-purple" onclick="xiaot.setEmotion('surprised')">😲 惊讶</button>
+        
+        <!-- 主题 -->
+        <button class="btn btn-blue" onclick="xiaot.setTheme('blue')">🔵 蓝色</button>
+        <button class="btn btn-orange" onclick="xiaot.setTheme('orange')">🟠 橙色</button>
+        <button class="btn btn-purple" onclick="xiaot.setTheme('purple')">🟣 紫色</button>
+        <button class="btn btn-cyan" onclick="xiaot.setTheme('cyan')">🔷 青色</button>
+        
+        <!-- 效果 -->
+        <button class="btn btn-success" onclick="toggleWave()">🔊 波形</button>
+        <button class="btn btn-warning" onclick="toggleParticles()">✨ 粒子</button>
+        <button class="btn btn-danger" onclick="updateRandomStatus()">🔄 状态</button>
+    </div>
+    
+    <!-- 小T 3D 脚本 -->
+    <script src="js/xiaot.js"></script>
+    
+    <script>
+        // 初始化小T
+        const xiaot = new XiaotInterface({
+            container: '#xiaot-container',
+            theme: 'blue',
+            avatar: 'robot',
+            particles: true,
+            autostart: true
+        });
+        
+        // 切换波形
+        function toggleWave() {
+            xiaot.setWaveEnabled(!xiaot.waveEnabled);
+        }
+        
+        // 切换粒子
+        function toggleParticles() {
+            xiaot.setParticlesEnabled(!xiaot.particles?.visible);
+        }
+        
+        // 更新随机状态
+        function updateRandomStatus() {
+            const cpu = Math.floor(Math.random() * 100);
+            const memory = Math.floor(Math.random() * 100);
+            const tasks = Math.floor(Math.random() * 500);
+            
+            document.getElementById('cpu-display').textContent = cpu + '%';
+            document.getElementById('memory-display').textContent = memory + '%';
+            document.getElementById('tasks-display').textContent = tasks;
+            
+            xiaot.updateStatus({
+                cpu: cpu,
+                memory: memory,
+                tasks: tasks
+            });
+        }
+        
+        // 自动更新状态
+        setInterval(updateRandomStatus, 2000);
+        
+        // 初始状态
+        updateRandomStatus();
+        
+        console.log('🚀 小T AI Assistant initialized');
+        console.log('📖 Controls: Click buttons to interact');
+    </script>
+</body>
+</html>
