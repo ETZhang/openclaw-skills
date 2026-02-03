@@ -4,31 +4,6 @@ OpenClaw AI Agent的实用技能集合，包含自动化任务、语音播报、
 
 ## Skills列表
 
-### 👁️ vision-monitor (NEW!)
-- 功能：AI视觉监控系统，使用摄像头+GLM-4V-Flash进行实时目标检测
-- 作者：小T
-- 路径：`vision-monitor/`
-- 依赖：ffmpeg, GLM-4V-Flash API
-- 特色：
-  - ✅ 实时摄像头监控（5秒间隔）
-  - ✅ AI目标检测（勺子、杯子、危险动作等）
-  - ✅ 可定制检测目标
-  - ✅ 飞书实时报警
-  - ✅ 自动清理旧照片
-- 使用方法：
-  ```bash
-  cd vision-monitor
-  chmod +x monitor.sh
-  
-  # 监控勺子
-  ./monitor.sh --target spoon
-  
-  # 监控危险动作
-  ./monitor.sh --target danger
-  
-  # 自定义目标
-  ./monitor.sh --target "红色杯子"
-  ```
 ### 📰 news-image-reader
 - 功能：读取新闻图片并语音播报
 - 作者：ET
