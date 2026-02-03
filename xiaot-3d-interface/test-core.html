@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小T - 情绪核心版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            background: #000; 
+            min-height: 100vh; 
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+        }
+        #container { 
+            width: 100vw; 
+            height: 100vh; 
+            position: fixed;
+            top: 0;
+            left: 0;
+        }
+        .controls {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 15px 20px;
+            background: rgba(10, 10, 15, 0.85);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 100;
+        }
+        .row {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 10px 16px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #fff;
+            background: rgba(255, 255, 255, 0.08);
+            min-width: 70px;
+        }
+        .btn:hover { transform: scale(1.05); }
+        .btn-active {
+            box-shadow: 0 0 20px currentColor;
+            border-color: currentColor;
+        }
+        .btn-play {
+            background: linear-gradient(135deg, #00FFFF, #0099FF);
+            color: #000;
+            border: none;
+            min-width: 100px;
+        }
+        .btn-stop {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            border: none;
+        }
+        .title {
+            position: fixed;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            z-index: 100;
+        }
+        .title h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #00FFFF;
+            text-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+        }
+        .title p {
+            color: #888;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        .status {
+            position: fixed;
+            top: 90px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #888;
+            font-size: 13px;
+            z-index: 100;
+        }
+        .emotion-label {
+            font-size: 11px;
+            color: #666;
+            text-align: center;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="container"></div>
+    
+    <div class="title">
+        <h1>🤖 小T</h1>
+        <p>情绪核心版 - 球体颜色随情绪变化</p>
+    </div>
+    
+    <div class="status" id="status">当前情绪：平静</div>
+    
+    <div class="controls">
+        <div class="emotion-label">点击情绪按钮，球体颜色会改变</div>
+        
+        <div class="row">
+            <button class="btn btn-play" id="btn-play" onclick="toggleAudio()">🎵 测试音乐</button>
+            <button class="btn" onclick="toggleParticles()">✨ 粒子</button>
+        </div>
+        
+        <div class="row">
+            <button class="btn" style="color: #00FFFF; border-color: #00FFFF;" onclick="setEmotion('calm')" data-emotion="calm">🛋️ 平静</button>
+            <button class="btn" style="color: #FFDD00; border-color: #FFDD00;" onclick="setEmotion('happy')" data-emotion="happy">😊 开心</button>
+            <button class="btn" style="color: #FF6B00; border-color: #FF6B00;" onclick="setEmotion('excited')" data-emotion="excited">✨ 兴奋</button>
+        </div>
+        
+        <div class="row">
+            <button class="btn" style="color: #6B5BFF; border-color: #6B5BFF;" onclick="setEmotion('sad')" data-emotion="sad">😢 悲伤</button>
+            <button class="btn" style="color: #FF3333; border-color: #FF3333;" onclick="setEmotion('serious')" data-emotion="serious">😐 严肃</button>
+            <button class="btn" style="color: #00FF88; border-color: #00FF88;" onclick="setEmotion('thinking')" data-emotion="thinking">🤔 思考</button>
+            <button class="btn" style="color: #FF69B4; border-color: #FF69B4;" onclick="setEmotion('listening')" data-emotion="listening">🎧 聆听</button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="js/xiaot-core.js"></script>
+    
+    <script>
+        let xiaot = null;
+        let audioContext = null;
+        let analyser = null;
+        let dataArray = null;
+        let isPlaying = false;
+        let audioSource = null;
+        let currentEmotion = 'calm';
+        
+        const emotionNames = {
+            calm: '平静',
+            happy: '开心',
+            excited: '兴奋',
+            sad: '悲伤',
+            serious: '严肃',
+            thinking: '思考',
+            listening: '聆听'
+        };
+        
+        const emotionColors = {
+            calm: '#00FFFF',
+            happy: '#FFDD00',
+            excited: '#FF6B00',
+            sad: '#6B5BFF',
+            serious: '#FF3333',
+            thinking: '#00FF88',
+            listening: '#FF69B4'
+        };
+        
+        function init() {
+            xiaot = new XiaotInterface({
+                container: '#container',
+                theme: 'jarvis',
+                particles: true,
+                autostart: true
+            });
+            setEmotion('calm');
+            console.log('🚀 小T Core initialized!');
+        }
+        
+        function setEmotion(emotion) {
+            currentEmotion = emotion;
+            
+            // 更新UI
+            document.querySelectorAll('.btn[data-emotion]').forEach(btn => {
+                btn.classList.remove('btn-active');
+                if (btn.dataset.emotion === emotion) {
+                    btn.classList.add('btn-active');
+                }
+            });
+            
+            // 更新状态文字
+            document.getElementById('status').innerHTML = `当前情绪：<span style="color: ${emotionColors[emotion]}">${emotionNames[emotion]}</span>`;
+            
+            // 设置小T情绪
+            if (xiaot) {
+                xiaot.setEmotion(emotion);
+            }
+        }
+        
+        async function toggleAudio() {
+            const btn = document.getElementById('btn-play');
+            
+            if (isPlaying) {
+                if (audioSource) {
+                    audioSource.stop();
+                    audioSource = null;
+                }
+                if (audioContext) {
+                    audioContext.close();
+                    audioContext = null;
+                }
+                isPlaying = false;
+                btn.textContent = '🎵 测试音乐';
+                btn.className = 'btn btn-play';
+                document.getElementById('status').innerHTML = `当前情绪：<span style="color: ${emotionColors[currentEmotion]}">${emotionNames[currentEmotion]}</span>`;
+                return;
+            }
+            
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 256;
+                dataArray = new Uint8Array(analyser.frequencyBinCount);
+                
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
+                
+                const lfo = audioContext.createOscillator();
+                const lfoGain = audioContext.createGain();
+                lfo.frequency.value = 0.8;
+                lfoGain.gain.value = 60;
+                lfo.connect(lfoGain);
+                lfoGain.connect(oscillator.frequency);
+                lfo.start();
+                
+                gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.25, audioContext.currentTime + 0.1);
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(analyser);
+                analyser.connect(audioContext.destination);
+                
+                audioSource = oscillator;
+                oscillator.start();
+                
+                isPlaying = true;
+                btn.textContent = '⏹️ 停止';
+                btn.className = 'btn btn-stop';
+                document.getElementById('status').innerHTML = `<span style="color: ${emotionColors[currentEmotion]}">🔊 律动中...</span>`;
+                
+                visualize();
+            } catch (e) {
+                console.error('Audio error:', e);
+            }
+        }
+        
+        function visualize() {
+            if (!isPlaying || !analyser || !xiaot) return;
+            
+            analyser.getByteFrequencyData(dataArray);
+            
+            let sum = 0;
+            for (let i = 0; i < dataArray.length; i++) {
+                sum += dataArray[i];
+            }
+            const average = sum / dataArray.length;
+            const normalized = average / 255;
+            
+            const bass = dataArray.slice(0, 10).reduce((a, b) => a + b) / 10;
+            const mid = dataArray.slice(10, 100).reduce((a, b) => a + b) / 90;
+            const treble = dataArray.slice(100, 200).reduce((a, b) => a + b) / 100;
+            
+            xiaot.reactToAudio(normalized, bass, mid, treble);
+            
+            requestAnimationFrame(visualize);
+        }
+        
+        function toggleParticles() {
+            if (xiaot) xiaot.setParticlesEnabled(!xiaot.particleSystem?.visible);
+        }
+        
+        setInterval(() => {
+            if (xiaot && !isPlaying) {
+                xiaot.updateStatus && xiaot.updateStatus({
+                    cpu: Math.floor(Math.random() * 100),
+                    memory: Math.floor(Math.random() * 100),
+                    tasks: Math.floor(Math.random() * 500)
+                });
+            }
+        }, 2000);
+        
+        window.onload = init;
+    </script>
+</body>
+</html>

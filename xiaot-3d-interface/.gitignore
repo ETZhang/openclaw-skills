@@ -1,0 +1,29 @@
+# Sensitive Files - DO NOT COMMIT
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+*.crt
+credentials.json
+tokens.json
+
+# Cache
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+
+# Build
+dist/
+build/
+*.egg-info/

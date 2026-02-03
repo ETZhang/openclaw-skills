@@ -1,0 +1,35 @@
+# Vision Monitor Configuration
+
+# GLM API Key (智谱AI - GLM-4V-Flash)
+glm_api_key: "your-api-key-here"
+
+# Feishu Configuration (optional)
+feishu:
+  token: "your-feishu-token"
+  user_id: "ou_xxxxx"
+
+# Monitoring Settings
+monitoring:
+  interval: 5  # seconds
+  max_photos: 10
+  output_dir: "/tmp/camera_monitor"
+
+# Detection Targets
+detection:
+  spoon:
+    prompt: "如果有人手里拿着勺子，请说\"发现勺子\"。如果没有人拿勺子，请说\"安全\"。"
+    alert: true
+  
+  cup:
+    prompt: "如果有人手里拿着杯子，请说\"发现杯子\"。如果没有人拿杯子，请说\"安全\"。"
+    alert: true
+  
+  danger:
+    prompt: "请检测是否有人做危险动作，例如爬高、攀爬、站在高处等。如果发现危险动作，请说\"危险警报\"。"
+    alert: true
+
+# API Endpoint
+api:
+  glm:
+    endpoint: "https://open.bigmodel.cn/api/paas/v4/chat/completions"
+    model: "glm-4v-flash"
