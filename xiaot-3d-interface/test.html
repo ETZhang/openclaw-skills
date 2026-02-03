@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小T - AI Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            background: #000; 
+            min-height: 100vh; 
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+        }
+        #container { 
+            width: 100vw; 
+            height: 100vh; 
+            position: relative;
+        }
+        #debug {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            color: #0f0;
+            font-family: monospace;
+            font-size: 12px;
+            background: rgba(0,0,0,0.8);
+            padding: 10px;
+            border-radius: 8px;
+            z-index: 1000;
+            max-width: 300px;
+            white-space: pre-wrap;
+        }
+        .controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 15px;
+            background: rgba(30,30,40,0.9);
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.1);
+            z-index: 100;
+        }
+        .btn {
+            padding: 10px 16px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white;
+            transition: all 0.2s;
+        }
+        .btn:hover { transform: translateY(-2px); }
+        .btn-blue { background: #3b82f6; }
+        .btn-green { background: #10b981; }
+        .btn-orange { background: #f97316; }
+        .btn-purple { background: #8b5cf6; }
+    </style>
+</head>
+<body>
+    <div id="container"></div>
+    <div id="debug">Initializing...</div>
+    
+    <div class="controls">
+        <button class="btn btn-blue" onclick="testScene()">🧪 测试场景</button>
+        <button class="btn btn-green" onclick="testAvatar()">🤖 测试头像</button>
+        <button class="btn btn-orange" onclick="testParticles()">✨ 测试粒子</button>
+        <button class="btn btn-purple" onclick="testAll()">🚀 完整测试</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="js/xiaot.js"></script>
+    
+    <script>
+        const debug = document.getElementById('debug');
+        function log(msg) {
+            debug.textContent += '\n' + msg;
+            console.log(msg);
+        }
+        
+        log('Page loaded');
+        
+        // 检查Three.js
+        if (typeof THREE === 'undefined') {
+            log('❌ Three.js not loaded!');
+        } else {
+            log('✅ Three.js loaded: ' + THREE.REVISION);
+        }
+        
+        // 测试1: 基本场景
+        function testScene() {
+            log('\n🧪 Testing basic scene...');
+            const container = document.getElementById('container');
+            container.innerHTML = '';
+            
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x1a1a2e);
+            
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 3;
+            
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(0x1a1a2e);
+            container.appendChild(renderer.domElement);
+            
+            // 添加光源
+            const light = new THREE.DirectionalLight(0xffffff, 1);
+            light.position.set(5, 5, 5);
+            scene.add(light);
+            scene.add(new THREE.AmbientLight(0x404040));
+            
+            // 添加立方体测试
+            const geometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+            const material = new THREE.MeshStandardMaterial({ 
+                color: 0x3b82f6,
+                emissive: 0x3b82f6,
+                emissiveIntensity: 0.3
+            });
+            const cube = new THREE.Mesh(geometry, material);
+            scene.add(cube);
+            
+            log('✅ Scene created with cube');
+            
+            function animate() {
+                requestAnimationFrame(animate);
+                cube.rotation.x += 0.01;
+                cube.rotation.y += 0.01;
+                renderer.render(scene, camera);
+            }
+            animate();
+        }
+        
+        // 测试2: 头像
+        function testAvatar() {
+            log('\n🤖 Testing avatar...');
+            const container = document.getElementById('container');
+            container.innerHTML = '';
+            
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0a0a0f);
+            
+            const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 0.5, 4);
+            
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(0x0a0a0f);
+            container.appendChild(renderer.domElement);
+            
+            // 光源
+            const light = new THREE.DirectionalLight(0xffffff, 1);
+            light.position.set(5, 5, 5);
+            scene.add(light);
+            scene.add(new THREE.AmbientLight(0x404040, 0.5));
+            
+            // 简单机器人头
+            const headGroup = new THREE.Group();
+            
+            // 头
+            const headGeo = new THREE.SphereGeometry(0.5, 32, 32);
+            const headMat = new THREE.MeshStandardMaterial({
+                color: 0x3b82f6,
+                metalness: 0.4,
+                roughness: 0.6,
+                emissive: 0x3b82f6,
+                emissiveIntensity: 0.2
+            });
+            const head = new THREE.Mesh(headGeo, headMat);
+            headGroup.add(head);
+            
+            // 眼睛
+            const eyeGeo = new THREE.SphereGeometry(0.1, 16, 16);
+            const eyeMat = new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                emissive: 0xffffff,
+                emissiveIntensity: 1
+            });
+            
+            const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
+            leftEye.position.set(-0.15, 0.1, 0.4);
+            headGroup.add(leftEye);
+            
+            const rightEye = new THREE.Mesh(eyeGeo, eyeMat);
+            rightEye.position.set(0.15, 0.1, 0.4);
+            headGroup.add(rightEye);
+            
+            // 身体 - 圆柱体+半球
+            const bodyMat = headMat.clone();
+            
+            // 圆柱身体
+            const bodyCylGeo = new THREE.CylinderGeometry(0.3, 0.3, 0.6, 32);
+            const bodyCyl = new THREE.Mesh(bodyCylGeo, bodyMat);
+            bodyCyl.position.y = -0.7;
+            headGroup.add(bodyCyl);
+            
+            // 顶部半球
+            const topHemGeo = new THREE.SphereGeometry(0.3, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+            const topHem = new THREE.Mesh(topHemGeo, bodyMat);
+            topHem.position.y = -0.4;
+            headGroup.add(topHem);
+            
+            // 底部半球
+            const botHemGeo = new THREE.SphereGeometry(0.3, 32, 16, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2);
+            const botHem = new THREE.Mesh(botHemGeo, bodyMat);
+            botHem.position.y = -1.0;
+            headGroup.add(botHem);
+            
+            scene.add(headGroup);
+            
+            log('✅ Avatar created');
+            
+            function animate() {
+                requestAnimationFrame(animate);
+                headGroup.rotation.y += 0.005;
+                renderer.render(scene, camera);
+            }
+            animate();
+        }
+        
+        // 测试3: 粒子
+        function testParticles() {
+            log('\n✨ Testing particles...');
+            const container = document.getElementById('container');
+            container.innerHTML = '';
+            
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0a0a0f);
+            
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 5;
+            
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            container.appendChild(renderer.domElement);
+            
+            // 粒子
+            const particleCount = 1000;
+            const geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(particleCount * 3);
+            const colors = new Float32Array(particleCount * 3);
+            
+            for (let i = 0; i < particleCount; i++) {
+                positions[i * 3] = (Math.random() - 0.5) * 10;
+                positions[i * 3 + 1] = (Math.random() - 0.5) * 10;
+                positions[i * 3 + 2] = (Math.random() - 0.5) * 10;
+                
+                colors[i * 3] = 0.2 + Math.random() * 0.3;
+                colors[i * 3 + 1] = 0.5 + Math.random() * 0.5;
+                colors[i * 3 + 2] = 1;
+            }
+            
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            
+            const material = new THREE.PointsMaterial({
+                size: 0.05,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.8,
+                blending: THREE.AdditiveBlending
+            });
+            
+            const particles = new THREE.Points(geometry, material);
+            scene.add(particles);
+            
+            log('✅ Particles created');
+            
+            function animate() {
+                requestAnimationFrame(animate);
+                particles.rotation.y += 0.002;
+                renderer.render(scene, camera);
+            }
+            animate();
+        }
+        
+        // 测试4: 完整小T
+        function testAll() {
+            log('\n🚀 Testing XiaotInterface...');
+            const container = document.getElementById('container');
+            container.innerHTML = '';
+            
+            try {
+                const xiaot = new XiaotInterface({
+                    container: '#container',
+                    theme: 'blue',
+                    particles: true,
+                    autostart: true
+                });
+                log('✅ XiaotInterface initialized successfully!');
+            } catch (e) {
+                log('❌ Error: ' + e.message);
+                log(e.stack);
+            }
+        }
+        
+        // 检查WebGL
+        function checkWebGL() {
+            try {
+                const canvas = document.createElement('canvas');
+                const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+                if (gl) {
+                    log('✅ WebGL supported');
+                    log('Renderer: ' + gl.getParameter(gl.RENDERER));
+                } else {
+                    log('❌ WebGL not supported');
+                }
+            } catch (e) {
+                log('❌ WebGL check failed: ' + e.message);
+            }
+        }
+        
+        // 初始化检查
+        window.onload = function() {
+            log('Window loaded');
+            checkWebGL();
+        };
+        
+        // 窗口调整
+        window.onresize = function() {
+            log('Window resized');
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>钉钉机器人测试</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0a0a0f 100%);
+            min-height: 100vh;
+            font-family: 'Inter', sans-serif;
+            color: #fff;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .card {
+            background: rgba(20, 20, 35, 0.9);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+        .title {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .title h1 {
+            font-size: 32px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #00BFFF, #1E90FF);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        .input-group label {
+            display: block;
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 5px;
+        }
+        .input-group input, .input-group textarea {
+            width: 100%;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 14px;
+        }
+        .input-group textarea {
+            height: 80px;
+            resize: none;
+        }
+        .btn {
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            transition: all 0.2s;
+        }
+        .btn:hover { transform: scale(1.05); }
+        .btn:active { transform: scale(0.98); }
+        .btn-primary {
+            background: linear-gradient(135deg, #00BFFF, #1E90FF);
+            border: none;
+            color: #fff;
+        }
+        .btn-success {
+            background: linear-gradient(135deg, #10b981, #059669);
+            border: none;
+        }
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            border: none;
+        }
+        .logs {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            padding: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+        }
+        .log-item {
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .log-item.send { color: #00BFFF; }
+        .log-item.receive { color: #10b981; }
+        .log-item.error { color: #ef4444; }
+        .log-item.info { color: #888; }
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 20px;
+            font-size: 12px;
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #6b7280;
+        }
+        .status-dot.online { background: #10b981; box-shadow: 0 0 10px #10b981; }
+        .status-dot.offline { background: #ef4444; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="title">
+            <h1>🤖 钉钉机器人测试</h1>
+            <p style="color: #666; font-size: 12px; margin-top: 5px;">
+                DingTalk Robot SDK Demo
+            </p>
+        </div>
+
+        <!-- 配置 -->
+        <div class="card">
+            <h2 style="font-size: 16px; margin-bottom: 15px; color: #00BFFF;">⚙️ 配置</h2>
+            
+            <div class="input-group">
+                <label>Webhook URL</label>
+                <input type="text" id="webhook" placeholder="https://oapi.dingtalk.com/robot/send?access_token=xxx">
+            </div>
+            
+            <div class="input-group">
+                <label>安全关键词 (可选)</label>
+                <input type="text" id="keyword" placeholder="小T">
+            </div>
+            
+            <div class="input-group">
+                <label>加签密钥 Secret (可选)</label>
+                <input type="text" id="secret" placeholder="SECxxx">
+            </div>
+            
+            <div class="status-badge">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">未初始化</span>
+            </div>
+        </div>
+
+        <!-- 发送消息 -->
+        <div class="card">
+            <h2 style="font-size: 16px; margin-bottom: 15px; color: #10b981;">📤 发送消息</h2>
+            
+            <div class="input-group">
+                <label>消息类型</label>
+                <select id="msgType" class="btn" style="width: 100%;">
+                    <option value="text">文本</option>
+                    <option value="markdown">Markdown</option>
+                    <option value="link">链接卡片</option>
+                </select>
+            </div>
+            
+            <div class="input-group">
+                <label>消息内容</label>
+                <textarea id="msgContent" placeholder="输入消息内容...">你好，我是小T！</textarea>
+            </div>
+            
+            <div class="btn-row" style="display: flex; gap: 10px;">
+                <button class="btn btn-primary" onclick="sendMessage()">发送消息</button>
+                <button class="btn btn-success" onclick="testHealth()">健康检查</button>
+            </div>
+        </div>
+
+        <!-- 消息日志 -->
+        <div class="card">
+            <h2 style="font-size: 16px; margin-bottom: 15px; color: #FF69B4;">📋 消息日志</h2>
+            <div class="logs" id="logs">
+                <div class="log-item info">💡 填写配置后点击"初始化"开始测试</div>
+            </div>
+        </div>
+
+        <!-- 帮助 -->
+        <div class="card">
+            <h2 style="font-size: 16px; margin-bottom: 15px; color: #888;">📖 使用说明</h2>
+            <div style="font-size: 12px; color: #666; line-height: 1.8;">
+                <p>1. 在钉钉群中添加自定义机器人，获取 Webhook URL</p>
+                <p>2. 设置安全验证（关键词或加签）</p>
+                <p>3. 填写上方配置，点击"初始化"</p>
+                <p>4. 测试发送消息</p>
+                <p>5. 接收回调需要部署到公网或内网穿透</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/dingding.js"></script>
+    <script>
+        let robot = null;
+        const logs = document.getElementById('logs');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+
+        function addLog(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `log-item ${type}`;
+            const time = new Date().toLocaleTimeString();
+            div.textContent = `[${time}] ${message}`;
+            logs.appendChild(div);
+            logs.scrollTop = logs.scrollHeight;
+        }
+
+        function initRobot() {
+            const webhook = document.getElementById('webhook').value.trim();
+            const keyword = document.getElementById('keyword').value.trim();
+            const secret = document.getElementById('secret').value.trim();
+
+            if (!webhook) {
+                addLog('❌ 请填写 Webhook URL', 'error');
+                return;
+            }
+
+            try {
+                robot = new DingTalkRobot({
+                    webhook: webhook,
+                    keyword: keyword || undefined,
+                    secret: secret || undefined,
+                    autoReply: false,
+                    llmEndpoint: ''
+                });
+
+                robot.init();
+
+                statusDot.className = 'status-dot online';
+                statusText.textContent = '已初始化';
+                addLog('✅ 机器人初始化成功', 'success');
+
+            } catch (e) {
+                addLog(`❌ 初始化失败: ${e.message}`, 'error');
+            }
+        }
+
+        async function sendMessage() {
+            if (!robot) {
+                initRobot();
+                if (!robot) return;
+            }
+
+            const type = document.getElementById('msgType').value;
+            const content = document.getElementById('msgContent').value.trim();
+
+            if (!content) {
+                addLog('❌ 请输入消息内容', 'error');
+                return;
+            }
+
+            addLog(`📤 发送 ${type}: ${content.substring(0, 50)}...`, 'send');
+
+            try {
+                await robot.send(content, type);
+                addLog('✅ 消息发送成功', 'success');
+            } catch (e) {
+                addLog(`❌ 发送失败: ${e.message}`, 'error');
+            }
+        }
+
+        async function testHealth() {
+            const webhook = document.getElementById('webhook').value.trim();
+            if (!webhook) {
+                addLog('❌ 请先填写 Webhook URL', 'error');
+                return;
+            }
+
+            // 提取 token
+            const match = webhook.match(/access_token=([^&]+)/);
+            if (!match) {
+                addLog('❌ 无法从 URL 提取 access_token', 'error');
+                return;
+            }
+
+            const token = match[1];
+            addLog('🔍 测试 Webhook 可用性...', 'info');
+
+            try {
+                const response = await fetch(`${webhook}&msgtype=text`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        msgtype: 'text',
+                        text: { content: '🔧 健康检查测试' }
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.errcode === 0) {
+                    addLog('✅ Webhook 可正常访问', 'success');
+                } else {
+                    addLog(`⚠️ 钉钉返回错误: ${data.errmsg}`, 'error');
+                }
+            } catch (e) {
+                addLog(`❌ 连接失败: ${e.message}`, 'error');
+            }
+        }
+
+        // 初始化按钮事件
+        document.getElementById('webhook').addEventListener('blur', initRobot);
+        document.getElementById('keyword').addEventListener('blur', initRobot);
+        document.getElementById('secret').addEventListener('blur', initRobot);
+    </script>
+</body>
+</html>

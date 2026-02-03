@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小T - OpenClaw 语音助手</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0a0a0f 100%);
+            min-height: 100vh;
+            font-family: 'Inter', sans-serif;
+            color: #fff;
+            overflow-x: hidden;
+        }
+        #container { 
+            width: 100vw; 
+            height: 100vh; 
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        .main-content {
+            position: relative;
+            z-index: 10;
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* 标题 */
+        .title {
+            text-align: center;
+            padding: 20px 0;
+        }
+        .title h1 {
+            font-size: 32px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #00FFFF, #FF69B4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .title p {
+            color: #666;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        
+        /* 状态卡片 */
+        .status-card {
+            background: rgba(20, 20, 35, 0.9);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+        
+        /* VAD可视化 */
+        .vad-container {
+            margin-bottom: 15px;
+        }
+        .vad-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        .vad-meter {
+            height: 40px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+        .vad-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #00FFFF, #0099FF);
+            transition: width 0.05s ease;
+            border-radius: 10px;
+        }
+        .vad-threshold {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: rgba(255, 51, 51, 0.5);
+        }
+        
+        /* 状态指示器 */
+        .status-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .status-badge {
+            flex: 1;
+            text-align: center;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+        }
+        .status-value {
+            font-size: 18px;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .status-label {
+            font-size: 10px;
+            color: #666;
+            margin-top: 3px;
+        }
+        
+        /* 录音指示 */
+        .recording-pulse {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px;
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.5);
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        .recording-pulse.active {
+            display: flex;
+        }
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background: #ef4444;
+            border-radius: 50%;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+        }
+        
+        /* 控制按钮 */
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 15px 25px;
+            border-radius: 15px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+        .btn:hover { transform: scale(1.05); }
+        .btn:active { transform: scale(0.98); }
+        
+        .btn-mic {
+            background: linear-gradient(135deg, #00FFFF, #0099FF);
+            color: #000;
+            border: none;
+            min-width: 140px;
+        }
+        .btn-mic.listening {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            animation: pulse 1.5s infinite;
+        }
+        .btn-stop {
+            background: linear-gradient(135deg, #6b7280, #4b5563);
+            color: white;
+            border: none;
+        }
+        
+        /* 对话历史 */
+        .chat-section {
+            flex: 1;
+            background: rgba(20, 20, 35, 0.9);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            margin-bottom: 15px;
+            overflow-y: auto;
+            max-height: 300px;
+        }
+        .chat-section h3 {
+            font-size: 14px;
+            color: #00FFFF;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .chat-message {
+            padding: 10px 12px;
+            margin: 8px 0;
+            border-radius: 10px;
+            font-size: 14px;
+            animation: fadeIn 0.3s ease;
+        }
+        .chat-message.user {
+            background: rgba(0, 255, 255, 0.1);
+            color: #00FFFF;
+            margin-left: 20px;
+            border-left: 3px solid #00FFFF;
+        }
+        .chat-message.xiaot {
+            background: rgba(255, 105, 180, 0.1);
+            color: #FF69B4;
+            margin-right: 20px;
+            border-right: 3px solid #FF69B4;
+        }
+        .chat-message.system {
+            background: rgba(255, 255, 255, 0.05);
+            color: #888;
+            text-align: center;
+            font-size: 12px;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* OpenClaw状态 */
+        .openclaw-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #6b7280;
+        }
+        .status-dot.connected {
+            background: #10b981;
+            box-shadow: 0 0 10px #10b981;
+        }
+        .status-dot.error {
+            background: #ef4444;
+        }
+        
+        /* OpenClaw配置 */
+        .config-section {
+            background: rgba(20, 20, 35, 0.9);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .config-section h3 {
+            font-size: 14px;
+            color: #10b981;
+            margin-bottom: 10px;
+        }
+        .config-input {
+            width: 100%;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 13px;
+            margin-bottom: 10px;
+        }
+        .config-input:focus {
+            outline: none;
+            border-color: #00FFFF;
+        }
+    </style>
+</head>
+<body>
+    <!-- 3D背景 -->
+    <div id="container"></div>
+    
+    <div class="main-content">
+        <!-- 标题 -->
+        <div class="title">
+            <h1>🤖 小T</h1>
+            <p>OpenClaw 语音助手 - 直接对话，无需打字</p>
+        </div>
+        
+        <!-- OpenClaw配置 -->
+        <div class="config-section">
+            <h3>🔗 小T 后端服务</h3>
+            <input type="text" class="config-input" id="openclawUrl"
+                   placeholder="后端 URL (默认: http://127.0.0.1:18790)"
+                   value="http://127.0.0.1:18790">
+            <input type="text" class="config-input" id="sessionId"
+                   placeholder="会话ID (默认: main)"
+                   value="main">
+            <div class="openclaw-status">
+                <div class="status-dot" id="ocStatusDot"></div>
+                <span id="ocStatusText">未连接</span>
+            </div>
+        </div>
+        
+        <!-- VAD状态 -->
+        <div class="status-card">
+            <h3 style="font-size:14px; margin-bottom:15px; color:#00FFFF;">🎤 语音检测</h3>
+            
+            <div class="vad-container">
+                <div class="vad-meter">
+                    <div class="vad-bar" id="vadBar"></div>
+                    <div class="vad-threshold"></div>
+                </div>
+                <div class="vad-label">
+                    <span>0%</span>
+                    <span style="color:#FF3333;">阈值 50%</span>
+                    <span>100%</span>
+                </div>
+            </div>
+            
+            <div class="status-row">
+                <div class="status-badge">
+                    <div class="status-value" id="probValue" style="color:#00FFFF;">0.00</div>
+                    <div class="status-label">语音概率</div>
+                </div>
+                <div class="status-badge">
+                    <div class="status-value" id="levelValue" style="color:#10b981;">0%</div>
+                    <div class="status-label">音频电平</div>
+                </div>
+                <div class="status-badge">
+                    <div class="status-value" id="stateValue" style="color:#888;">待机</div>
+                    <div class="status-label">当前状态</div>
+                </div>
+            </div>
+            
+            <div class="recording-pulse" id="recordingPulse">
+                <div class="pulse-dot"></div>
+                <span>🔴 检测到语音...</span>
+            </div>
+        </div>
+        
+        <!-- 控制按钮 -->
+        <div class="controls">
+            <button class="btn btn-mic" id="btnMic" onclick="toggleListening()">
+                🎤 点击开始对话
+            </button>
+            <button class="btn btn-stop" onclick="testSpeak()">
+                🔊 测试语音
+            </button>
+        </div>
+        
+        <!-- 对话历史 -->
+        <div class="chat-section">
+            <h3>💬 对话历史</h3>
+            <div id="chatBox">
+                <div class="chat-message system">点击上方按钮开始对话，我会听你说话并回答</div>
+            </div>
+        </div>
+        
+        <!-- 提示 -->
+        <p style="text-align:center; color:#666; font-size:11px; margin-top:10px;">
+            💡 说话后会自动识别并发送给OpenClaw处理
+        </p>
+    </div>
+
+    <!-- 脚本 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="js/xiaot-core.js"></script>
+    <script src="js/vad.js"></script>
+    <script src="js/assistant.js"></script>
+    
+    <script>
+        let xiaot = null;
+        let assistant = null;
+        let isListening = false;
+        
+        function init() {
+            // 3D背景
+            xiaot = new XiaotInterface({
+                container: '#container',
+                theme: 'xiaot',
+                particles: true,
+                autostart: true
+            });
+            
+            console.log('🚀 Xiaot Voice Assistant initialized!');
+        }
+        
+        async function toggleListening() {
+            const btn = document.getElementById('btnMic');
+            
+            if (isListening) {
+                // 停止
+                if (assistant) {
+                    assistant.stopListening();
+                    assistant.dispose();
+                }
+                isListening = false;
+                btn.textContent = '🎤 点击开始对话';
+                btn.classList.remove('listening');
+                updateState('idle', '待机');
+                addChatMessage('system', '🔇 已停止监听');
+            } else {
+                // 开始
+                btn.textContent = '🔄 初始化中...';
+                
+                // 创建助手
+                assistant = new XiaotVoiceAssistant({
+                    backendUrl: document.getElementById('openclawUrl').value || 'http://127.0.0.1:18790',
+                    openclawSession: document.getElementById('sessionId').value || 'main',
+                    vadThreshold: 0.5,
+                    sttLanguage: 'zh-CN'
+                });
+                
+                // 设置回调
+                assistant.onStatusChange = (state, message) => {
+                    updateState(state, message);
+                };
+                
+                assistant.onTranscript = (text, isFinal) => {
+                    if (text.trim()) {
+                        if (isFinal) {
+                            // 最终结果，显示在用户消息中
+                            const msgDiv = document.getElementById('tempTranscript');
+                            if (msgDiv) {
+                                msgDiv.remove();
+                            }
+                            addChatMessage('user', text);
+                        } else {
+                            // 中间结果，显示临时消息
+                            let tempDiv = document.getElementById('tempTranscript');
+                            if (!tempDiv) {
+                                tempDiv = document.createElement('div');
+                                tempDiv.id = 'tempTranscript';
+                                tempDiv.className = 'chat-message user';
+                                tempDiv.style.opacity = '0.5';
+                                tempDiv.textContent = text + '...';
+                                document.getElementById('chatBox').appendChild(tempDiv);
+                            } else {
+                                tempDiv.textContent = text + '...';
+                            }
+                            document.getElementById('chatBox').scrollTop = document.getElementById('chatBox').scrollHeight;
+                        }
+                    }
+                };
+                
+                assistant.onResponse = (data) => {
+                    updateOCStatus('connected', '已连接');
+                    if (data.response) {
+                        addChatMessage('xiaot', data.response);
+                    }
+                };
+                
+                assistant.onSpeakingStart = () => {
+                    if (xiaot) xiaot.setEmotion('listening');
+                };
+                
+                assistant.onSpeakingEnd = () => {
+                    if (xiaot) xiaot.setEmotion('calm');
+                };
+                
+                assistant.onError = (error) => {
+                    console.error('Assistant error:', error);
+                    addChatMessage('system', '❌ 错误: ' + error.message);
+                    updateOCStatus('error', '错误');
+                };
+                
+                // VAD回调用于UI
+                if (assistant.vad) {
+                    assistant.vad.onVADUpdate = (status) => {
+                        updateVADUI(status);
+                    };
+                }
+                
+                // 初始化并开始
+                const success = await assistant.init();
+                if (success) {
+                    await assistant.startListening();
+                    isListening = true;
+                    btn.textContent = '🔴 点击停止';
+                    btn.classList.add('listening');
+                    updateState('listening', '监听中...');
+                    updateOCStatus('connected', '已连接');
+                    addChatMessage('system', '🎤 开始监听，请说话...');
+                } else {
+                    btn.textContent = '🎤 点击开始对话';
+                    addChatMessage('system', '❌ 初始化失败');
+                }
+            }
+        }
+        
+        function updateVADUI(status) {
+            // 更新概率
+            document.getElementById('probValue').textContent = status.probability.toFixed(2);
+            
+            // 更新电平
+            const level = Math.round(status.level * 100);
+            document.getElementById('levelValue').textContent = level + '%';
+            
+            // 更新进度条
+            const bar = document.getElementById('vadBar');
+            bar.style.width = (status.probability * 100) + '%';
+            
+            // 颜色
+            if (status.isSpeech) {
+                bar.style.background = 'linear-gradient(90deg, #FF69B4, #FF3333)';
+                document.getElementById('recordingPulse').classList.add('active');
+            } else {
+                bar.style.background = 'linear-gradient(90deg, #00FFFF, #0099FF)';
+                document.getElementById('recordingPulse').classList.remove('active');
+            }
+        }
+        
+        function updateState(state, message) {
+            document.getElementById('stateValue').textContent = message;
+            
+            // 状态颜色
+            const colors = {
+                idle: '#888',
+                listening: '#00FFFF',
+                speech: '#FF69B4',
+                processing: '#FF6B00',
+                speaking: '#10b981',
+                error: '#ef4444'
+            };
+            document.getElementById('stateValue').style.color = colors[state] || '#888';
+            
+            // 3D头像状态
+            if (xiaot) {
+                switch(state) {
+                    case 'listening': xiaot.setEmotion('listening'); break;
+                    case 'speech': xiaot.setEmotion('happy'); break;
+                    case 'processing': xiaot.setEmotion('thinking'); break;
+                    case 'speaking': xiaot.setEmotion('excited'); break;
+                    default: xiaot.setEmotion('calm');
+                }
+            }
+        }
+        
+        function updateOCStatus(state, message) {
+            const dot = document.getElementById('ocStatusDot');
+            const text = document.getElementById('ocStatusText');
+            
+            dot.className = 'status-dot ' + state;
+            text.textContent = message;
+        }
+        
+        function addChatMessage(type, text) {
+            const box = document.getElementById('chatBox');
+            const div = document.createElement('div');
+            div.className = 'chat-message ' + type;
+            div.textContent = text;
+            box.appendChild(div);
+            box.scrollTop = box.scrollHeight;
+        }
+        
+        function testSpeak() {
+            const synth = window.speechSynthesis;
+            const utterance = new SpeechSynthesisUtterance('你好！我是小T，OpenClaw的语音助手。点击下方按钮开始对话吧！');
+            utterance.lang = 'zh-CN';
+            utterance.rate = 1.0;
+            synth.speak(utterance);
+            addChatMessage('xiaot', '[语音测试] 你好！我是小T');
+            if (xiaot) xiaot.setEmotion('excited');
+            setTimeout(() => {
+                if (xiaot) xiaot.setEmotion('calm');
+            }, 2000);
+        }
+        
+        window.onload = init;
+    </script>
+</body>
+</html>
